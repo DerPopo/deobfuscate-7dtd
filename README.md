@@ -14,15 +14,20 @@ Deobfuscate-Main loads Assembly-CSharp.dll into an [AssemblyDefinition](https://
 Then, each module listed in patchers/patchers.xml will be called in order of the listing.
 Here's an example :
 > <?xml version="1.0"?>
+
 > <Patchers>
+
 >     <Patcher file="NamePatcher.dll" class="NamePatcher.NamePatcher"/>
+
 > </Patchers>
 
 The modules make usage of [Mono.Cecil](https://github.com/jbevain/cecil/tree/master/Mono.Cecil), additionaly Mono.Cecil.Rocks is provided.
 
 Each module's main class should provide these methods :
 > public static string getName()
+
 > public static string[] getAuthors()
+
 > public static void Patch(DeobfuscateMain.Logger logger, AssemblyDefinition asmCSharp, AssemblyDefinition __reserved)
 
 ##Compiling
