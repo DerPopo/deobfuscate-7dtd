@@ -16,7 +16,7 @@ Deobfuscate-Main loads Assembly-CSharp.dll into an [AssemblyDefinition](https://
 Then, each module listed in patchers/patchers.xml will be called in order of the listing.
 You can find examples in the releases.
 
-The modules make usage of [Mono.Cecil](https://github.com/jbevain/cecil/tree/master/Mono.Cecil), additionaly Mono.Cecil.Rocks is provided.
+The modules make use of [Mono.Cecil](https://github.com/jbevain/cecil/tree/master/Mono.Cecil), additionaly Mono.Cecil.Rocks is provided.
 
 Each module's main class should provide these methods :
 
