@@ -28,16 +28,6 @@ namespace DeobfuscateMain
 				}
 			}
 		}
-		static void DrawUsage()
-		{
-			Console.WriteLine("Usage :");
-			Console.WriteLine("namepatcher [input file]    Patches Assembly-CSharp.dll.");
-		}
-
-		static bool TryArgs(string[] args)
-		{
-			return args.Length != 0 && (args[0].ToLower().Equals("-h") || (args[0].ToLower().Equals("-p") && args.Length >= 3));
-		}
 
 		private static string GetContainingFolder(string path)
 		{
@@ -68,8 +58,7 @@ namespace DeobfuscateMain
 		public static void Main(string[] args)
 		{
 			Console.WriteLine("Assembly-CSharp Deobfuscator for 7 Days to Die [by the 7 Days to Die Modding Community]");
-			//args = new string[]{ @"E:\Programme\SteamLibrary\SteamApps\common\7 Days To Die\7DaysToDie_Data\Managed\Assembly-CSharp.o.dll" };
-			//string ownPath = Assembly.GetEntryAssembly().Location;
+
 			ownFolder = GetContainingFolder(Assembly.GetEntryAssembly().Location);
 			if (ownFolder == null) {
 				Console.WriteLine("ERROR : Unable to retrieve the folder containing deobfuscate!");
@@ -101,6 +90,7 @@ namespace DeobfuscateMain
 				mainLogger.Log("");
 				mainLogger.Log("There are no patches to apply (patchers.xml doesn't exist)! Exiting.");
 				mainLogger.Close();
+				System.Threading.Thread.Sleep(10000);
 				return;
 			}
 
@@ -112,6 +102,7 @@ namespace DeobfuscateMain
 				mainLogger.Log("ERROR : Unable to load patchers.xml : ");
 				mainLogger.Log (e.ToString ());
 				mainLogger.Close();
+				System.Threading.Thread.Sleep(10000);
 				return;
 			}
 
@@ -126,6 +117,7 @@ namespace DeobfuscateMain
 				mainLogger.Log("");
 				mainLogger.Log("There are no patches to apply (none listed in patchers.xml)! Exiting.");
 				mainLogger.Close();
+				System.Threading.Thread.Sleep(10000);
 				return;
 			}
 
@@ -140,6 +132,23 @@ namespace DeobfuscateMain
 				mainLogger.Log("ERROR : Unable to load Assembly-CSharp.dll :");
 				mainLogger.Log(e.ToString ());
 				mainLogger.Close();
+				System.Threading.Thread.Sleep(10000);
+				return;
+			}
+			if (csharpDef.Modules.Count == 0)
+			{
+				mainLogger.Log("");
+				mainLogger.Log("ERROR : Assembly-CSharp.dll is invalid!");
+				mainLogger.Close();
+				System.Threading.Thread.Sleep(10000);
+				return;
+			}
+			if (csharpDef.Modules[0].GetType("Deobfuscated") != null)
+			{
+				mainLogger.Log("");
+				mainLogger.Log("Assembly-CSharp already is deobfuscated!");
+				mainLogger.Close();
+				System.Threading.Thread.Sleep(10000);
 				return;
 			}
 
@@ -192,6 +201,10 @@ namespace DeobfuscateMain
 				}
 			}
 
+			csharpDef.Modules[0].Types.Add(new TypeDefinition("", "Deobfuscated", 
+				Mono.Cecil.TypeAttributes.AutoLayout | Mono.Cecil. TypeAttributes.Public | 
+					Mono.Cecil.TypeAttributes.AnsiClass | Mono.Cecil.TypeAttributes.BeforeFieldInit));
+
 			string outputPath = managedFolder + Path.DirectorySeparatorChar + "Assembly-CSharp.deobf.dll";
 			mainLogger.Log("Saving the new assembly to " + outputPath + " ...");
 			try
@@ -203,12 +216,14 @@ namespace DeobfuscateMain
 				mainLogger.Log("");
 				mainLogger.Log("Unable to save the assembly : ");
 				mainLogger.Log(e.ToString());
+				System.Threading.Thread.Sleep(10000);
 				return;
 			}
 
 			mainLogger.Log("");
 			mainLogger.Log("Success.");
 			mainLogger.Close();
+			System.Threading.Thread.Sleep(10000);
 		}
 	}
 }
