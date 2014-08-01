@@ -29,7 +29,7 @@ Each module's main class should provide these methods :
 ##Compiling
 You can use [MonoDevelop](http://monodevelop.com/Download) or Microsoft Visual Studio to open the .sln file.
 
-To compile, you need to copy Mono.Cecil.dll and Mono.Cecil.Rocks.dll (which you can find in one of the releases)
+To compile, you need to copy Mono.Cecil.dll and Mono.Cecil.Rocks.dll (which you can find in the releases)
  into the path of the project.
 
 ##Contributing
