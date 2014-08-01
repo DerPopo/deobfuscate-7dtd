@@ -14,12 +14,7 @@ A new Assembly-CSharp.deobf.dll will be put into that folder.
 Deobfuscate-Main loads Assembly-CSharp.dll into an [AssemblyDefinition](https://github.com/jbevain/cecil/blob/master/Mono.Cecil/AssemblyDefinition.cs) using Mono.Cecil.
 
 Then, each module listed in patchers/patchers.xml will be called in order of the listing.
-Here's an example :
-
- <?xml version="1.0"?>
- <Patchers>
-  <Patcher file="NamePatcher.dll" class="NamePatcher.NamePatcher"/>
- </Patchers>
+You can find examples in the releases.
 
 The modules make usage of [Mono.Cecil](https://github.com/jbevain/cecil/tree/master/Mono.Cecil), additionaly Mono.Cecil.Rocks is provided.
 
