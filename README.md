@@ -18,9 +18,12 @@ Here's an example :
 
 > <?xml version="1.0"?>
 
+
 > <Patchers>
 
+
 > <Patcher file="NamePatcher.dll" class="NamePatcher.NamePatcher"/>
+
 
 > </Patchers>
 
