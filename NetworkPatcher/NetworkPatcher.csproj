@@ -42,10 +42,10 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="Mono.Cecil">
-      <HintPath>..\..\Mono.Cecil.dll</HintPath>
+      <HintPath>..\Mono.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil.Rocks">
-      <HintPath>..\..\Mono.Cecil.Rocks.dll</HintPath>
+      <HintPath>..\Mono.Cecil.Rocks.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

@@ -7,6 +7,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NamePatcher", "NamePatcher\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetworkPatcher", "NetworkPatcher\NetworkPatcher.csproj", "{506795AE-3B63-4276-9397-644E3F89384B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{99580291-4DFD-4CCA-9CAD-7DA545E74F61}"
+	ProjectSection(SolutionItems) = preProject
+		Mono.Cecil.dll = Mono.Cecil.dll
+		Mono.Cecil.Rocks.dll = Mono.Cecil.Rocks.dll
+		Mono.Cecil license.txt = Mono.Cecil license.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -25,6 +32,8 @@ Global
 		{506795AE-3B63-4276-9397-644E3F89384B}.Debug|x86.Build.0 = Debug|Any CPU
 		{506795AE-3B63-4276-9397-644E3F89384B}.Release|x86.ActiveCfg = Release|Any CPU
 		{506795AE-3B63-4276-9397-644E3F89384B}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = Deobfuscate-Main\Deobfuscate-Main.csproj
