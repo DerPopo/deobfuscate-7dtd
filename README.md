@@ -1,5 +1,4 @@
 #Deobfuscate-7dtd
-================
 
 Deobfuscate-7dtd is a module-based deobfuscator for [7 Days to Die](http://7daystodie.com/).
 
