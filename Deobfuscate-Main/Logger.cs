@@ -27,7 +27,7 @@ namespace DeobfuscateMain
 			}
 		}
 
-		public void Log(string str)
+		public void Log(string str = "")
 		{
 			if (logToConsole) {
 				LogConsole (str);

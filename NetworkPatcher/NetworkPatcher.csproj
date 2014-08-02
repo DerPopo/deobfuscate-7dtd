@@ -14,38 +14,29 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
+    <OutputPath>..\bin\Debug\patchers\</OutputPath>
     <DefineConstants>DEBUG;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
-    <CustomCommands>
-      <CustomCommands>
-        <Command type="AfterBuild" command="C:\Windows\system32\cmd.exe /c copy ${TargetName} .\..\..\..\bin\patchers\${TargetName}" workingdir="${TargetDir}" />
-        <Command type="AfterBuild" command="C:\Windows\system32\cmd.exe /c copy ${ProjectName}.pdb .\..\..\..\bin\patchers\${ProjectName}.pdb" workingdir="${TargetDir}" />
-      </CustomCommands>
-    </CustomCommands>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>full</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release</OutputPath>
+    <OutputPath>..\bin\Release\patchers\</OutputPath>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
-    <CustomCommands>
-      <CustomCommands>
-        <Command type="AfterBuild" command="C:\Windows\system32\cmd.exe /c copy ${TargetName} .\..\..\..\bin\patchers\${TargetName}" workingdir="${TargetDir}" />
-      </CustomCommands>
-    </CustomCommands>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="Mono.Cecil">
       <HintPath>..\Mono.Cecil.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Mono.Cecil.Rocks">
       <HintPath>..\Mono.Cecil.Rocks.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -57,6 +48,7 @@
     <ProjectReference Include="..\Deobfuscate-Main\Deobfuscate-Main.csproj">
       <Project>{21AD4599-042D-4614-B73A-8FDB5598033A}</Project>
       <Name>Deobfuscate-Main</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
 </Project>
