@@ -1,5 +1,7 @@
 using System;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
+using Mono.Cecil.Rocks;
 
 namespace ManualDeobfuscator
 {
@@ -210,55 +212,92 @@ namespace ManualDeobfuscator
 				}
 				// END Console
 
-				// ConsoleCommand
+				// Commands
 				if (typeConsoleCommand != null) {
 					RenameAction<TypeDefinition> ("ConsoleCommand") (typeConsoleCommand);
+					PatchConsoleCommandMethods (typeConsoleCommand, typeConsole);
 
+					// Individual command classes
+					foreach (TypeDefinition td in mainModule.Types) {
+						if (td.BaseType != null && td.BaseType.Name.Equals (typeConsoleCommand.Name)) {
+							MethodDefinition namesMethod = Find ("Command.Names()", td.Methods, method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
+								HasType (method.ReturnType, "System.String[]")
+							);
+							if (namesMethod != null) {
+								MethodBody body = namesMethod.Body;
+								body.SimplifyMacros ();
+								string commandName = string.Empty;
+								for (int i = 1; i < body.Instructions.Count; i++) {
+									Instruction curInstr = body.Instructions [i];
+									if (curInstr.OpCode == OpCodes.Ldstr) {
+										if (curInstr.Operand is string) {
+											string curName = (string)curInstr.Operand;
+											if (curName.Length > commandName.Length) {
+												commandName = curName;
+											}
+										} else
+											logger.Log ("WARNING : A Ldstr instruction has no string operand!");
+									}
+								}
+								if (commandName.Length > 0)
+									RenameAction<TypeDefinition> ("Command_" + commandName) (td);
+								else
+									logger.Log ("WARNING: No name for command found");
 
-					OnElement ("ConsoleCommand.Help()", typeConsoleCommand.Methods,
-			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 1 &&
-						HasType (method.Parameters [0].ParameterType, typeConsole.Name) &&
-						HasType (method.ReturnType, "System.Void"),
-						RenameAction<MethodDefinition> ("Help")
-					);
-
-
-					OnElement ("ConsoleCommand.RepeatInterval()", typeConsoleCommand.Methods,
-			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
-						HasType (method.ReturnType, "System.Int32"),
-						RenameAction<MethodDefinition> ("RepeatInterval")
-					);
-
-
-					OnElement ("ConsoleCommand.Names()", typeConsoleCommand.Methods,
-			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
-						HasType (method.ReturnType, "System.String[]"),
-						RenameAction<MethodDefinition> ("Names")
-					);
-
-
-					OnElement ("ConsoleCommand.Description()", typeConsoleCommand.Methods,
-			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
-						HasType (method.ReturnType, "System.String"),
-						RenameAction<MethodDefinition> ("Description")
-					);
-
-
-					OnElement ("ConsoleCommand.Run()", typeConsoleCommand.Methods,
-			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 1 &&
-						HasType (method.Parameters [0].ParameterType, "System.String[]") &&
-						HasType (method.ReturnType, "System.Void"),
-						RenameAction<MethodDefinition> ("Run")
-					);
-
-
+								body.OptimizeMacros ();
+							} else {
+							}
+							PatchConsoleCommandMethods (td, typeConsole);
+						}
+					}
+					// END Individual command classes
 				}
-				// END ConsoleCommand
+				// END Commands
 
 			}
 			// END Console and ConsoleCommand
 
 		}
+
+		private static void PatchConsoleCommandMethods (TypeDefinition td, TypeDefinition consoleType)
+		{
+			OnElement ("ConsoleCommand.Help()", td.Methods,
+			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 1 &&
+				HasType (method.Parameters [0].ParameterType, consoleType.Name) &&
+				HasType (method.ReturnType, "System.Void"),
+						RenameAction<MethodDefinition> ("Help")
+			);
+
+
+			OnElement ("ConsoleCommand.RepeatInterval()", td.Methods,
+			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
+				HasType (method.ReturnType, "System.Int32"),
+						RenameAction<MethodDefinition> ("RepeatInterval")
+			);
+
+
+			OnElement ("ConsoleCommand.Names()", td.Methods,
+			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
+				HasType (method.ReturnType, "System.String[]"),
+						RenameAction<MethodDefinition> ("Names")
+			);
+
+
+			OnElement ("ConsoleCommand.Description()", td.Methods,
+			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
+				HasType (method.ReturnType, "System.String"),
+						RenameAction<MethodDefinition> ("Description")
+			);
+
+
+			OnElement ("ConsoleCommand.Run()", td.Methods,
+			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 1 &&
+				HasType (method.Parameters [0].ParameterType, "System.String[]") &&
+				HasType (method.ReturnType, "System.Void"),
+						RenameAction<MethodDefinition> ("Run")
+			);
+		}
+
 	}
 }
 
