@@ -18,13 +18,12 @@ namespace ManualDeobfuscator
 
 
 			OnElement ("DamageSource", mainModule.GetType ("EntityPlayer").BaseType.Resolve ().Methods,
-			    method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 3 && method.Name.Equals ("DamageEntity"),
+			    method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 2 && method.Name.Equals ("DamageEntity"),
 				method => {
 				RenameAction<TypeDefinition> ("DamageSource") (method.Parameters [0].ParameterType.Resolve ());
 				return true;
 			}
 			);
-
 
 			RenameAction<TypeDefinition> ("ItemBase") (mainModule.GetType ("ItemBlock").BaseType.Resolve ());
 
@@ -215,18 +214,18 @@ namespace ManualDeobfuscator
 				// Commands
 				if (typeConsoleCommand != null) {
 					RenameAction<TypeDefinition> ("ConsoleCommand") (typeConsoleCommand);
-					PatchConsoleCommandMethods (typeConsoleCommand, typeConsole);
+					PatchConsoleCommandMethods (typeConsoleCommand, typeConsole, "ConsoleCommand");
 
 					// Individual command classes
 					foreach (TypeDefinition td in mainModule.Types) {
 						if (td.BaseType != null && td.BaseType.Name.Equals (typeConsoleCommand.Name)) {
+							string commandName = string.Empty;
 							MethodDefinition namesMethod = Find ("Command.Names()", td.Methods, method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
 								HasType (method.ReturnType, "System.String[]")
 							);
 							if (namesMethod != null) {
 								MethodBody body = namesMethod.Body;
 								body.SimplifyMacros ();
-								string commandName = string.Empty;
 								for (int i = 1; i < body.Instructions.Count; i++) {
 									Instruction curInstr = body.Instructions [i];
 									if (curInstr.OpCode == OpCodes.Ldstr) {
@@ -246,8 +245,16 @@ namespace ManualDeobfuscator
 
 								body.OptimizeMacros ();
 							} else {
+								logger.Log ("WARNING: No Names() method for command found");
 							}
-							PatchConsoleCommandMethods (td, typeConsole);
+							PatchConsoleCommandMethods (td, typeConsole, commandName.Length > 0 ? "Command_" + commandName : "UnknownCommand");
+
+							foreach (TypeDefinition td2 in mainModule.Types) {
+								if (td2.BaseType != null && td2.BaseType.Name.Equals (td.Name)) {
+									Console.WriteLine ("Base for: " + clnamestomod [td] + " - " + td2.Name);
+								}
+							}
+
 						}
 					}
 					// END Individual command classes
@@ -259,43 +266,40 @@ namespace ManualDeobfuscator
 
 		}
 
-		private static void PatchConsoleCommandMethods (TypeDefinition td, TypeDefinition consoleType)
+		private static void PatchConsoleCommandMethods (TypeDefinition td, TypeDefinition consoleType, string typeName)
 		{
-			OnElement ("ConsoleCommand.Help()", td.Methods,
+			OnElement (typeName + ".Help()", td.Methods,
 			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 1 &&
 				HasType (method.Parameters [0].ParameterType, consoleType.Name) &&
 				HasType (method.ReturnType, "System.Void"),
 						RenameAction<MethodDefinition> ("Help")
 			);
 
-
-			OnElement ("ConsoleCommand.RepeatInterval()", td.Methods,
+			OnElement (typeName + ".RepeatInterval()", td.Methods,
 			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
 				HasType (method.ReturnType, "System.Int32"),
 						RenameAction<MethodDefinition> ("RepeatInterval")
 			);
 
-
-			OnElement ("ConsoleCommand.Names()", td.Methods,
+			OnElement (typeName + ".Names()", td.Methods,
 			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
 				HasType (method.ReturnType, "System.String[]"),
 						RenameAction<MethodDefinition> ("Names")
 			);
 
-
-			OnElement ("ConsoleCommand.Description()", td.Methods,
-			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
-				HasType (method.ReturnType, "System.String"),
-						RenameAction<MethodDefinition> ("Description")
-			);
-
-
-			OnElement ("ConsoleCommand.Run()", td.Methods,
+			OnElement (typeName + ".Run()", td.Methods,
 			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 1 &&
 				HasType (method.Parameters [0].ParameterType, "System.String[]") &&
 				HasType (method.ReturnType, "System.Void"),
 						RenameAction<MethodDefinition> ("Run")
 			);
+
+			OnElement (typeName + ".Description()", td.Methods,
+			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
+				HasType (method.ReturnType, "System.String"),
+						RenameAction<MethodDefinition> ("Description")
+			);
+
 		}
 
 	}
