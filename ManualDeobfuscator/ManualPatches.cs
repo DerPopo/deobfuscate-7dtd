@@ -235,23 +235,23 @@ namespace ManualDeobfuscator
 												commandName = curName;
 											}
 										} else
-											logger.Log ("WARNING : A Ldstr instruction has no string operand!");
+											logger.Warning("A Ldstr instruction has no string operand!");
 									}
 								}
 								if (commandName.Length > 0)
 									RenameAction<TypeDefinition> ("Command_" + commandName) (td);
 								else
-									logger.Log ("WARNING: No name for command found");
+									logger.Warning("No name for command found");
 
 								body.OptimizeMacros ();
 							} else {
-								logger.Log ("WARNING: No Names() method for command found");
+								logger.Warning("No Names() method for command found");
 							}
 							PatchConsoleCommandMethods (td, typeConsole, commandName.Length > 0 ? "Command_" + commandName : "UnknownCommand");
 
 							foreach (TypeDefinition td2 in mainModule.Types) {
 								if (td2.BaseType != null && td2.BaseType.Name.Equals (td.Name)) {
-									Console.WriteLine ("Base for: " + clnamestomod [td] + " - " + td2.Name);
+									logger.Info("Base for: " + clnamestomod [td] + " - " + td2.Name);
 								}
 							}
 
