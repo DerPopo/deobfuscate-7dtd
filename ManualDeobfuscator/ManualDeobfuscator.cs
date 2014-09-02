@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Mono.Cecil;
 using System.Reflection;
+using DeobfuscateMain;
 
 namespace ManualDeobfuscator
 {
@@ -18,13 +19,13 @@ namespace ManualDeobfuscator
 			return new string[]{ "Alloc", "DerPopo" };
 		}
 
-		public static void Patch(DeobfuscateMain.Logger logger, AssemblyDefinition asmCSharp, AssemblyDefinition __reserved)
+		public static void Patch(Logger logger, AssemblyDefinition asmCSharp, AssemblyDefinition __reserved)
 		{
 			PatchHelpers.logger = logger;
 			ManualPatches.applyManualPatches(asmCSharp.MainModule);
 			ManualPatches.FinalizeNormalizing();
 
-			logger.Log(String.Format("Successful: {0} / Failed: {1}", PatchHelpers.success, PatchHelpers.errors));
+			logger.Log(Logger.Level.KEYINFO, String.Format("Successful: {0} / Failed: {1}", PatchHelpers.success, PatchHelpers.errors));
 		}
 	}
 }
