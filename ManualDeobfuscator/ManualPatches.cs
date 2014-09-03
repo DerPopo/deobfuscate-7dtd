@@ -25,6 +25,30 @@ namespace ManualDeobfuscator
 			}
 			);
 
+			// Rename method which generates map colors
+			{
+				MethodDefinition mapColors = Find ("Chunk.GetMapColors()", mainModule.GetType ("Chunk").Methods, method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
+				                                     method.Name.Equals("GetMapColors")
+				);
+				if (mapColors != null) {
+					MethodBody body = mapColors.Body;
+					body.SimplifyMacros ();
+					for (int i = 1; i < body.Instructions.Count; i++) {
+						Instruction curInstr = body.Instructions [i];
+						if (curInstr.OpCode == OpCodes.Call) {
+							if (curInstr.Operand is MethodDefinition) {
+								MethodDefinition md = (MethodDefinition)curInstr.Operand;
+								RenameAction<MethodDefinition> ("CalcMapColors") (md);
+								MakeMethodPublicAction(md);
+							} else
+								logger.Log ("ERROR (Chunk.GetMapColors()): A Call instruction has no MethodDefinition operand!");
+						}
+					}
+					body.OptimizeMacros ();
+				}
+			}
+
+
 			RenameAction<TypeDefinition> ("ItemBase") (mainModule.GetType ("ItemBlock").BaseType.Resolve ());
 
 
