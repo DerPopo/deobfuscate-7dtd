@@ -20,7 +20,7 @@ namespace NamePatcher
 		{
 			foreach (ModuleDefinition mdef in asmCSharp.Modules)
 			{
-				logger.Log("Patching module " + mdef.Name + " (" + mdef.Types.Count + " type[s]) ...");
+				logger.KeyInfo("Patching " + mdef.Types.Count + " type[s] ...");
 				foreach (TypeDefinition tdef in mdef.Types)
 				{
 					NameNormalizer.CheckNames(tdef);

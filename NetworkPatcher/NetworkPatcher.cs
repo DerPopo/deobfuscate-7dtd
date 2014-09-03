@@ -3,6 +3,7 @@ using DeobfuscateMain;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Rocks;
+using System.Collections.Generic;
 
 namespace NetworkPatcher
 {
@@ -14,11 +15,13 @@ namespace NetworkPatcher
 		}
 		public static string[] getAuthors()
 		{
-			return new string[]{ "DerPopo" };
+			return new string[]{ "DerPopo", "Alloc" };
 		}
 
 		static MethodDefinition cctorMDef = null;
 		static TypeDefinition packageTypeEnumDef = null;
+		private static int success = 0;
+		private static int error = 0;
 
 		public static void Patch(Logger logger, AssemblyDefinition asmCSharp, AssemblyDefinition __reserved)
 		{
@@ -41,10 +44,10 @@ namespace NetworkPatcher
 					break;
 			}
 			if (packageClass == null) {
-				logger.Log("ERROR : Cannot find m_PackageTypeToClass!");
+				logger.Info("Cannot find m_PackageTypeToClass!");
 				return;
 			}
-			logger.Log("LOG : Found m_PackageTypeToClass!");
+			logger.Info("Found m_PackageTypeToClass!");
 			packageClass.Name = "Package";
 			foreach (MethodDefinition mdef in packageClass.Methods) {
 				if (mdef.Name.Equals (".cctor")) {
@@ -58,29 +61,31 @@ namespace NetworkPatcher
 				}
 			}
 			if (cctorMDef == null) {
-				logger.Log("ERROR : Cannot find Package.cctor()!");
+				logger.Error("Cannot find Package.cctor()!");
 				return;
 			}
-			logger.Log("LOG : Found Package.cctor()!");
+			logger.Info("Found Package.cctor()!");
 			if (packageTypeEnumDef == null) {
-				logger.Log("ERROR : Cannot find CreatePackage!");
+				logger.Error("Cannot find CreatePackage!");
 				return;
 			}
-			logger.Log("LOG : Found CreatePackage!");
+			logger.Info("Found CreatePackage!");
 			bool curFound = false;
 			foreach (MethodDefinition mdef in packageClass.Methods) {
 				if (mdef.IsStatic && mdef.Parameters.Count == 1 && mdef.ReturnType.Resolve().Equals(packageTypeEnumDef) && mdef.Parameters[0].ParameterType.Resolve().FullName.Equals("System.IO.BinaryReader"))
 				{
 					mdef.Name = "ReadPackageType";
 					curFound = true;
+					success++;
 					break;
 				}
 			}
 			if (!curFound) {
-				logger.Log("WARNING : Cannot find ReadPackageType!");
+				logger.Warning("Cannot find ReadPackageType!");
+				error++;
 			}
-			logger.Log("LOG : Found ReadPackageType!");
-			PatchVirtualPackageMethods(packageClass, logger);
+			logger.Info("Found ReadPackageType!");
+			PatchVirtualPackageMethods(packageClass, logger, true);
 			MethodBody cctorBody = cctorMDef.Body;
 			cctorBody.SimplifyMacros();
 			for (int i = 1; i < cctorBody.Instructions.Count; i++)
@@ -96,7 +101,7 @@ namespace NetworkPatcher
 						{
 							FieldDefinition enumField = null;
 							int enumFieldId = (Int32)lastInstr.Operand;
-							logger.Log("LOG : Analyzing packet class (" + curPackageClass.FullName + "; " + enumFieldId + ")...");
+							logger.Info("Analyzing packet class (" + curPackageClass.FullName + "; " + enumFieldId + ")...");
 							foreach (FieldDefinition curEnumField in packageTypeEnumDef.Fields)
 							{
 								if (curEnumField.HasConstant && curEnumField.Constant != null)
@@ -110,7 +115,7 @@ namespace NetworkPatcher
 									else if (curEnumField.Constant.GetType () == typeof(Int32))
 										curConst = (int)(((Int32)curEnumField.Constant));
 									if (curConst == -1)
-										logger.Log ("WARNING : Unknown const in packageTypeEnumDef.Fields!");
+										logger.Info("Unknown const in packageTypeEnumDef.Fields!");
 									else if (curConst == enumFieldId)
 									{
 										enumField = curEnumField;
@@ -119,55 +124,72 @@ namespace NetworkPatcher
 								}
 							}
 							if (enumField == null) {
-								logger.Log ("WARNING : The package class uses an unknown PackageType!");
+								logger.Warning("The package class uses an unknown PackageType!");
 								curPackageClass.Name = "NetPackage_" + enumFieldId;
 							} else if (containsAbnormalUnicode (enumField.Name)) {
-								logger.Log ("INFO : The package class uses an obfuscated PackageType!");
+								logger.Info("The package class uses an obfuscated PackageType!");
 								curPackageClass.Name = "NetPackage_" + enumFieldId;
 							}
 							else
 								curPackageClass.Name = "NetPackage_" + enumField.Name;
-							PatchVirtualPackageMethods(curPackageClass.Resolve(), logger);
-							logger.Log("LOG : Renamed packet class (" + curPackageClass.FullName + ")!");
+							PatchVirtualPackageMethods(curPackageClass.Resolve(), logger, false);
+							logger.Info("Renamed packet class (" + curPackageClass.FullName + ")!");
 						}
 						else
-							logger.Log("WARNING : There is no ldc.i4 before the current ldtoken !");
+							logger.Warning("There is no ldc.i4 before the current ldtoken !");
 					}
 					else
-						logger.Log("WARNING : A Ldtoken instruction has no TypeReference operand!");
+						logger.Warning("A Ldtoken instruction has no TypeReference operand!");
 				}
 			}
 			cctorBody.OptimizeMacros();
+			logger.Log(Logger.Level.KEYINFO, String.Format("Successful: {0} / Failed: {1}", success, error));
 		}
 
-		private static void PatchVirtualPackageMethods(TypeDefinition tdef, Logger logger)
+		private static void PatchVirtualPackageMethods(TypeDefinition tdef, Logger logger, bool isBaseClass)
 		{
+			Dictionary<String, Boolean> methodPatchedByName = new Dictionary<String, Boolean>();
+			methodPatchedByName.Add("GetPackageType", false);
+			methodPatchedByName.Add("Read", false);
+			methodPatchedByName.Add("Write", false);
+			methodPatchedByName.Add("Process", false);
+			methodPatchedByName.Add("GetEstimatedPackageSize", false);
+			methodPatchedByName.Add ("SetChannel", !isBaseClass);
+			methodPatchedByName.Add ("GetFriendlyName", !isBaseClass);
 			foreach (MethodDefinition mdef in tdef.Methods) {
 				if (mdef.IsVirtual && mdef.Parameters.Count == 0 && mdef.ReturnType.Resolve().Equals(packageTypeEnumDef))
 				{
 					mdef.Name = "GetPackageType";
-					logger.Log("LOG : Found " + mdef.FullName + "!");
+					logger.Info("Found " + mdef.FullName + "!");
+					methodPatchedByName["GetPackageType"] = true;
+					success++;
 					continue;
 				}
 				if (mdef.IsVirtual && mdef.Parameters.Count == 1 && mdef.ReturnType.Resolve().FullName.Equals("System.Void") &&
 					mdef.Parameters[0].ParameterType.Resolve().FullName.Equals("System.Int32"))
 				{
 					mdef.Name = "SetChannel";
-					logger.Log("LOG : Found " + mdef.FullName + "!");
+					logger.Info("Found " + mdef.FullName + "!");
+					methodPatchedByName["SetChannel"] = true;
+					success++;
 					continue;
 				}
 				if (mdef.IsVirtual && mdef.Parameters.Count == 1 && mdef.ReturnType.Resolve().FullName.Equals("System.Void") &&
 					mdef.Parameters[0].ParameterType.Resolve().FullName.Equals("System.IO.BinaryReader"))
 				{
 					mdef.Name = "Read";
-					logger.Log("LOG : Found " + mdef.FullName + "!");
+					logger.Info("Found " + mdef.FullName + "!");
+					methodPatchedByName["Read"] = true;
+					success++;
 					continue;
 				}
 				if (mdef.IsVirtual && mdef.Parameters.Count == 1 && mdef.ReturnType.Resolve().FullName.Equals("System.Void") &&
 					mdef.Parameters[0].ParameterType.Resolve().FullName.Equals("System.IO.BinaryWriter"))
 				{
 					mdef.Name = "Write";
-					logger.Log("LOG : Found " + mdef.FullName + "!");
+					logger.Info("Found " + mdef.FullName + "!");
+					methodPatchedByName["Write"] = true;
+					success++;
 					continue;
 				}
 				if (mdef.IsVirtual && mdef.Parameters.Count == 2 && mdef.ReturnType.Resolve().FullName.Equals("System.Void") &&
@@ -175,20 +197,33 @@ namespace NetworkPatcher
 					mdef.Parameters[1].ParameterType.Resolve().FullName.Equals("INetConnectionCallbacks"))
 				{
 					mdef.Name = "Process";
-					logger.Log("LOG : Found " + mdef.FullName + "!");
+					logger.Info("Found " + mdef.FullName + "!");
+					methodPatchedByName["Process"] = true;
+					success++;
 					continue;
 				}
 				if (mdef.IsVirtual && mdef.Parameters.Count == 0 && mdef.ReturnType.Resolve().FullName.Equals("System.Int32"))
 				{
 					mdef.Name = "GetEstimatedPackageSize";
-					logger.Log("LOG : Found " + mdef.FullName + "!");
+					logger.Info("Found " + mdef.FullName + "!");
+					methodPatchedByName["GetEstimatedPackageSize"] = true;
+					success++;
 					continue;
 				}
 				if (mdef.IsVirtual && mdef.Parameters.Count == 0 && mdef.ReturnType.Resolve().FullName.Equals("System.String"))
 				{
 					mdef.Name = "GetFriendlyName";
-					logger.Log("LOG : Found " + mdef.FullName + "!");
+					logger.Info("Found " + mdef.FullName + "!");
+					methodPatchedByName["GetFriendlyName"] = true;
+					success++;
 					continue;
+				}
+			}
+			foreach (String mdName in methodPatchedByName.Keys) {
+				if (!methodPatchedByName[mdName])
+				{
+					logger.Log(isBaseClass ? Logger.Level.ERROR : Logger.Level.WARNING, "Unable to find " + (tdef.Name + "." + mdName) + "! (already defined in a base class?)");
+					error++;
 				}
 			}
 		}

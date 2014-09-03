@@ -2,6 +2,7 @@ using System;
 using Mono.Cecil;
 using Mono.Collections.Generic;
 using System.Collections.Generic;
+using DeobfuscateMain;
 
 namespace ManualDeobfuscator
 {
@@ -10,7 +11,7 @@ namespace ManualDeobfuscator
 		public static int errors = 0;
 		public static int success = 0;
 
-		public static DeobfuscateMain.Logger logger = null;
+		public static Logger logger = null;
 
 		public delegate bool MatchField (FieldDefinition fd);
 
@@ -82,7 +83,7 @@ namespace ManualDeobfuscator
 					if (matcher (elem)) {
 						if (found != null) {
 							errors++;
-							Log ("ERROR (" + description + "): Multiple matching " + typeof(T).Name + "s found!");
+							Log(Logger.Level.ERROR, "(" + description + "): Multiple matching " + typeof(T).Name + "s found!");
 							return null;
 						}
 						found = elem;
@@ -101,7 +102,7 @@ namespace ManualDeobfuscator
 					if (matcher (elem)) {
 						if (found != null) {
 							errors++;
-							Log ("ERROR (" + description + "): Multiple matching " + typeof(T).Name + "s found!");
+							Log(Logger.Level.ERROR, "(" + description + "): Multiple matching " + typeof(T).Name + "s found!");
 							return;
 						}
 						found = elem;
@@ -111,14 +112,14 @@ namespace ManualDeobfuscator
 
 			if (found == null) {
 				errors++;
-				Log ("ERROR (" + description + "): " + typeof(T).Name + " not found!");
+				Log(Logger.Level.ERROR, "(" + description + "): " + typeof(T).Name + " not found!");
 				return;
 			}
 
 			foreach (Action<T> a in actions) {
 				if (!a (found)) {
 					errors++;
-					Log ("ERROR (" + description + "): Applying action failed!");
+					Log(Logger.Level.ERROR, "(" + description + "): Applying action failed!");
 					return;
 				}
 			}
@@ -147,18 +148,18 @@ namespace ManualDeobfuscator
 				try {
 					vce.Key.Name = vce.Value;
 				} catch (Exception e) {
-					Log ("An exception occured : ");
-					Log (e.ToString ());
+					Log(Logger.Level.ERROR, "An exception occured : ");
+					Log(Logger.Level.ERROR, e.ToString ());
 				}
 			}
 		}
 
 
-		public static void Log(string message = "") {
+		public static void Log(Logger.Level level = Logger.Level.NONE, string message = "") {
 			if (logger != null)
-				logger.Log(message);
+				logger.Log(level, message);
 			else
-				Console.WriteLine(message);
+				Console.WriteLine(Logger.Level_ToString(level) + message);
 		}
 
 	}
