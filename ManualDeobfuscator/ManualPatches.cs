@@ -41,12 +41,19 @@ namespace ManualDeobfuscator
 								RenameAction<MethodDefinition> ("CalcMapColors") (md);
 								MakeMethodPublicAction(md);
 							} else
-								logger.Log ("ERROR (Chunk.GetMapColors()): A Call instruction has no MethodDefinition operand!");
+								logger.Warning (" (Chunk.GetMapColors()): A Call instruction has no MethodDefinition operand!");
 						}
 					}
 					body.OptimizeMacros ();
 				}
 			}
+
+			OnElement("ConnectionManager.RemovePlayer()", mainModule.GetType("ConnectionManager").Methods,
+			          method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 2 &&
+			          HasType(method.Parameters[0].ParameterType, "System.Int32") && 
+			          HasType(method.Parameters[1].ParameterType, "System.Boolean") &&
+			          HasType(method.ReturnType, "System.Void"),
+			          RenameAction<MethodDefinition> ("RemovePlayer"));
 
 
 			RenameAction<TypeDefinition> ("ItemBase") (mainModule.GetType ("ItemBlock").BaseType.Resolve ());
