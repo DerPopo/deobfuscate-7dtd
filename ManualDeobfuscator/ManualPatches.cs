@@ -25,10 +25,30 @@ namespace ManualDeobfuscator
 			}
 			);
 
+			OnElement ("EntityPlayer.base.base.getPosition()", mainModule.GetType ("EntityPlayer").BaseType.Resolve ().BaseType.Resolve ().Methods,
+			          method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 && method.Name.Equals ("GetPosition"),
+			          method => {
+				MethodBody body = method.Body;
+				body.SimplifyMacros ();
+				for (int i = 0; i < body.Instructions.Count; i++) {
+					Instruction curInstr = body.Instructions [i];
+					if (curInstr.OpCode == OpCodes.Ldfld) {
+						if (curInstr.Operand is FieldDefinition) {
+							RenameAction<FieldDefinition> ("position") ((FieldDefinition)curInstr.Operand);
+						} else
+							logger.Error ("A Ldfld instruction has no FieldDefinition");
+					}
+				}
+
+				body.OptimizeMacros ();
+				return true;
+			}
+			);
+
 			// Rename method which generates map colors
 			{
 				MethodDefinition mapColors = Find ("Chunk.GetMapColors()", mainModule.GetType ("Chunk").Methods, method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
-				                                     method.Name.Equals("GetMapColors")
+					method.Name.Equals ("GetMapColors")
 				);
 				if (mapColors != null) {
 					MethodBody body = mapColors.Body;
@@ -39,7 +59,7 @@ namespace ManualDeobfuscator
 							if (curInstr.Operand is MethodDefinition) {
 								MethodDefinition md = (MethodDefinition)curInstr.Operand;
 								RenameAction<MethodDefinition> ("CalcMapColors") (md);
-								MakeMethodPublicAction(md);
+								MakeMethodPublicAction (md);
 							} else
 								logger.Warning (" (Chunk.GetMapColors()): A Call instruction has no MethodDefinition operand!");
 						}
@@ -48,11 +68,11 @@ namespace ManualDeobfuscator
 				}
 			}
 
-			OnElement("ConnectionManager.RemovePlayer()", mainModule.GetType("ConnectionManager").Methods,
+			OnElement ("ConnectionManager.RemovePlayer()", mainModule.GetType ("ConnectionManager").Methods,
 			          method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 2 &&
-			          HasType(method.Parameters[0].ParameterType, "System.Int32") && 
-			          HasType(method.Parameters[1].ParameterType, "System.Boolean") &&
-			          HasType(method.ReturnType, "System.Void"),
+				HasType (method.Parameters [0].ParameterType, "System.Int32") && 
+				HasType (method.Parameters [1].ParameterType, "System.Boolean") &&
+				HasType (method.ReturnType, "System.Void"),
 			          RenameAction<MethodDefinition> ("RemovePlayer"));
 
 
@@ -266,23 +286,23 @@ namespace ManualDeobfuscator
 												commandName = curName;
 											}
 										} else
-											logger.Warning("A Ldstr instruction has no string operand!");
+											logger.Warning ("A Ldstr instruction has no string operand!");
 									}
 								}
 								if (commandName.Length > 0)
 									RenameAction<TypeDefinition> ("Command_" + commandName) (td);
 								else
-									logger.Warning("No name for command found");
+									logger.Warning ("No name for command found");
 
 								body.OptimizeMacros ();
 							} else {
-								logger.Warning("No Names() method for command found");
+								logger.Warning ("No Names() method for command found");
 							}
 							PatchConsoleCommandMethods (td, typeConsole, commandName.Length > 0 ? "Command_" + commandName : "UnknownCommand");
 
 							foreach (TypeDefinition td2 in mainModule.Types) {
 								if (td2.BaseType != null && td2.BaseType.Name.Equals (td.Name)) {
-									logger.Info("Base for: " + clnamestomod [td] + " - " + td2.Name);
+									logger.Info ("Base for: " + clnamestomod [td] + " - " + td2.Name);
 								}
 							}
 
