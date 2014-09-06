@@ -20,8 +20,8 @@ namespace NetworkPatcher
 
 		static MethodDefinition cctorMDef = null;
 		static TypeDefinition packageTypeEnumDef = null;
-		private static int success = 0;
-		private static int error = 0;
+		public static int success = 0;
+		public static int error = 0;
 
 		public static void Patch(Logger logger, AssemblyDefinition asmCSharp, AssemblyDefinition __reserved)
 		{
@@ -126,7 +126,7 @@ namespace NetworkPatcher
 							if (enumField == null) {
 								logger.Warning("The package class uses an unknown PackageType!");
 								curPackageClass.Name = "NetPackage_" + enumFieldId;
-							} else if (containsAbnormalUnicode (enumField.Name)) {
+							} else if (Helpers.isObfuscated(enumField.Name)) {
 								logger.Info("The package class uses an obfuscated PackageType!");
 								curPackageClass.Name = "NetPackage_" + enumFieldId;
 							}
@@ -143,6 +143,7 @@ namespace NetworkPatcher
 				}
 			}
 			cctorBody.OptimizeMacros();
+			PatchPackageQueue.Patch(logger, asmCSharp);
 			logger.Log(Logger.Level.KEYINFO, String.Format("Successful: {0} / Failed: {1}", success, error));
 		}
 
@@ -227,28 +228,6 @@ namespace NetworkPatcher
 				}
 			}
 		}
-
-
-		private static bool containsAbnormalUnicode(String origName)
-		{
-			if (origName == null)
-				return true;
-			foreach (char ch in origName)
-			{
-				if (
-					(
-						((ch & 0x00FF) > 0x7F) || (((ch & 0xFF00) >> 8) > 0x7F)
-					) ||
-					(("" + ch).Normalize().ToCharArray()[0] > 0x00FF) ||
-					(((("" + ch).Normalize().ToCharArray()[0] & 0x00FF)) <= 0x20)
-				)
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-
 	}
 }
 
