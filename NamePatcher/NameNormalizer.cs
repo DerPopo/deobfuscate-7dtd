@@ -94,8 +94,8 @@ namespace NamePatcher
             int cmid = 0;
             try
             {
-                if (tdef.HasInterfaces)
-                    cmid += checkTypeReferences(tdef.Interfaces, "if", cmid, tdef);
+                //if (tdef.HasInterfaces)
+                //    cmid += checkTypeReferences(tdef.Interfaces, "if", cmid, tdef);
                 if (tdef.HasNestedTypes)
                     cmid += checkLocalDefinitions<TypeDefinition>(tdef.NestedTypes, "scl", cmid, tdef);
             }
@@ -103,25 +103,25 @@ namespace NamePatcher
             try
             {
                 if (tdef.HasMethods)
-                    cmid += checkLocalDefinitions<MethodDefinition>(tdef.Methods, "md", cmid, tdef);
+                    checkLocalDefinitions<MethodDefinition>(tdef.Methods, "md", 0, tdef);
             }
             catch (Exception e) { throw new Exception("occured while patching 2", e); }
             try
             {
                 if (tdef.HasFields)
-                    cmid += checkLocalDefinitions<FieldDefinition>(tdef.Fields, "fd", cmid, tdef);
+                    checkLocalDefinitions<FieldDefinition>(tdef.Fields, "fd", 0, tdef);
             }
             catch (Exception e) { throw new Exception("occured while patching 3", e); }
             try
             {
                 if (tdef.HasEvents)
-                    cmid += checkLocalDefinitions<EventDefinition>(tdef.Events, "event", cmid, tdef);
+                    checkLocalDefinitions<EventDefinition>(tdef.Events, "event", 0, tdef);
             }
             catch (Exception e) { throw new Exception("occured while patching 4", e); }
             try
             {
                 if (tdef.HasProperties)
-                    cmid += checkLocalDefinitions<PropertyDefinition>(tdef.Properties, "prop", cmid, tdef);
+                    checkLocalDefinitions<PropertyDefinition>(tdef.Properties, "prop", 0, tdef);
             }
             catch (Exception e) { throw new Exception("occured while patching 5", e); }
 
