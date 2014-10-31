@@ -21,7 +21,6 @@
     <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\bin\Release\patchers\</OutputPath>
     <ErrorReport>prompt</ErrorReport>
@@ -44,6 +43,9 @@
     <Compile Include="NetworkPatcher.cs" />
     <Compile Include="PatchPackageQueue.cs" />
     <Compile Include="Helpers.cs" />
+    <Compile Include="PatchMisc.cs" />
+    <Compile Include="HelperClass.cs" />
+    <Compile Include="Misc\TileEntityPatcher.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -52,5 +54,8 @@
       <Name>Deobfuscate-Main</Name>
       <Private>False</Private>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Misc\" />
   </ItemGroup>
 </Project>
