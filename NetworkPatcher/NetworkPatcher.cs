@@ -11,11 +11,11 @@ namespace NetworkPatcher
 	{
 		public static string getName()
 		{
-			return "PacketClassesPatcher";
+			return "PacketOrNotRelatedStuffPatcher";
 		}
 		public static string[] getAuthors()
 		{
-			return new string[]{ "DerPopo", "Alloc" };
+			return new string[]{ "DerPopo", "Alloc", "KaXaK" };
 		}
 
 		static MethodDefinition cctorMDef = null;
@@ -25,6 +25,7 @@ namespace NetworkPatcher
 
 		public static void Patch(Logger logger, AssemblyDefinition asmCSharp, AssemblyDefinition __reserved)
 		{
+			HelperClass.SetLogger(logger);
 			TypeDefinition packageClass = null;
 			foreach (ModuleDefinition mdef in asmCSharp.Modules)
 			{
@@ -127,8 +128,19 @@ namespace NetworkPatcher
 								logger.Warning("The package class uses an unknown PackageType!");
 								curPackageClass.Name = "NetPackage_" + enumFieldId;
 							} else if (Helpers.isObfuscated(enumField.Name)) {
-								logger.Info("The package class uses an obfuscated PackageType!");
-								curPackageClass.Name = "NetPackage_" + enumFieldId;
+								MethodDefinition ctorMdef = HelperClass.findMember<MethodDefinition>(packageClass.Module, curPackageClass.Resolve(), false, false,
+									HelperClass.MemberNameComparer<MethodDefinition>(".ctor"),
+									HelperClass.MethodParametersComparer(""));
+								if (ctorMdef != null && ctorMdef.Parameters [0].Name.Equals("_te"))
+								{
+									curPackageClass.Name = "NetPackage_TileEntityUpdate";
+									enumField.Name = "TileEntityUpdate";
+								}
+								else
+								{
+									logger.Info("The package class uses an obfuscated PackageType!");
+									curPackageClass.Name = "NetPackage_" + enumFieldId;
+								}
 							}
 							else
 								curPackageClass.Name = "NetPackage_" + enumField.Name;
@@ -144,6 +156,7 @@ namespace NetworkPatcher
 			}
 			cctorBody.OptimizeMacros();
 			PatchPackageQueue.Patch(logger, asmCSharp);
+			PatchMisc.Patch(logger, asmCSharp);
 			logger.Log(Logger.Level.KEYINFO, String.Format("Successful: {0} / Failed: {1}", success, error));
 		}
 
@@ -155,8 +168,8 @@ namespace NetworkPatcher
 			methodPatchedByName.Add("Write", false);
 			methodPatchedByName.Add("Process", false);
 			methodPatchedByName.Add("GetEstimatedPackageSize", false);
-			methodPatchedByName.Add ("SetChannel", !isBaseClass);
-			methodPatchedByName.Add ("GetFriendlyName", !isBaseClass);
+			methodPatchedByName.Add("SetChannel", !isBaseClass);
+			methodPatchedByName.Add("GetFriendlyName", !isBaseClass);
 			foreach (MethodDefinition mdef in tdef.Methods) {
 				if (mdef.IsVirtual && mdef.Parameters.Count == 0 && mdef.ReturnType.Resolve().Equals(packageTypeEnumDef))
 				{

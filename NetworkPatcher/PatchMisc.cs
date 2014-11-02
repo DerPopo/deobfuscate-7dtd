@@ -57,6 +57,29 @@ namespace NetworkPatcher
 			entityIdDef.Name = "entityId";
 			logger.Info("Patched Entity.entityId.");
 
+			MethodDefinition entityInitMdef = HelperClass.findMember<MethodDefinition>(module, entityIdDef.DeclaringType, false,
+				HelperClass.MemberNameComparer<MethodDefinition> ("Init"),
+				HelperClass.MethodParametersComparer ("System.Int32"),
+				HelperClass.MethodOPCodeComparer( new int[]{ 0, 1, 2 },
+					new OpCode[] {
+						OpCodes.Ldarg_0,
+						OpCodes.Ldarg_1,
+						OpCodes.Stfld
+					}, new object[]{null,null,null}
+				)
+			);
+			if (entityInitMdef != null)
+			{
+				FieldDefinition entityClassFDef = ((FieldReference)entityInitMdef.Body.Instructions[2].Operand).Resolve();
+				if (entityClassFDef == null)
+					logger.Error("Unable to resolve the FieldReference to the Entity.entityClass field in Entity.Init(int)!");
+				else
+				{
+					entityClassFDef.Name = "entityClass";
+					logger.Info("Patched Entity.entityClass.");
+				}
+			}
+
 			TypeDefinition gameManager = module.GetType("GameManager");
 			if (gameManager == null)
 			{
@@ -153,6 +176,12 @@ namespace NetworkPatcher
 			);
 			if (blockValueConvert != null)
 				blockValueConvert.Name = "ConvertOldRawData";
+			FieldDefinition blockValueEmpty = HelperClass.findMember<FieldDefinition>(module, blockValue, false, 
+				HelperClass.FieldTypeComparer(blockValue.Name),
+				HelperClass.FieldAttributeComparer(FieldAttributes.Static)
+			);
+			if (blockValueEmpty != null)
+				blockValueEmpty.Name = "Empty";
 			blockValue.Name = "BlockValue";
 
 			//--------------------------------Helpers------------------------------

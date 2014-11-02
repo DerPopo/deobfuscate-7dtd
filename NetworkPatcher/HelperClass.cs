@@ -101,7 +101,7 @@ namespace NetworkPatcher
 					return false;
 				for (int i = 0; i < method.Parameters.Count; i++)
 				{
-					if (!method.Parameters[i].ParameterType.FullName.Equals(parameterTypes[i]))
+					if (parameterTypes[i].Length != 0 && !method.Parameters[i].ParameterType.FullName.Equals(parameterTypes[i]))
 						return false;
 				}
 				return true;
@@ -128,7 +128,7 @@ namespace NetworkPatcher
 			};
 		}
 
-		public static T findMember<T>(ModuleDefinition module, object type, bool allowMultipleResults, params Func<T,bool>[] comparers)
+		public static T findMember<T>(ModuleDefinition module, object type, bool allowMultipleResults, bool mustHaveResult, params Func<T,bool>[] comparers)
 			where T : IMemberDefinition
 		{
 			T[] ret = findMembers<T>(module, type, comparers);
@@ -137,7 +137,8 @@ namespace NetworkPatcher
 			nullContainer.GetType().GetMethod("Add", new Type[]{typeof(T)}).Invoke(nullContainer, new object[]{ null });
 			if (ret == null || ret.Length == 0)
 			{
-				OnError(ErrorCode.MEMBER_NOT_FOUND, typeof(T).Name, Environment.StackTrace);
+				if (mustHaveResult)
+					OnError(ErrorCode.MEMBER_NOT_FOUND, typeof(T).Name, Environment.StackTrace);
 				return nullContainer[0];
 			}
 			//if (ret.Length == 0)
@@ -148,6 +149,11 @@ namespace NetworkPatcher
 				return nullContainer[0];
 			}
 			return ret[0];
+		}
+		public static T findMember<T>(ModuleDefinition module, object type, bool allowMultipleResults, params Func<T,bool>[] comparers)
+			where T : IMemberDefinition
+		{
+			return findMember<T>(module, type, allowMultipleResults, true, comparers);
 		}
 		public static T[] findMembers<T>(ModuleDefinition module, object type, params Func<T,bool>[] comparers)
 			where T : IMemberDefinition

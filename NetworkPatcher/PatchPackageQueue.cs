@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using DeobfuscateMain;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
