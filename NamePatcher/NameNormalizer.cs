@@ -82,8 +82,9 @@ namespace NamePatcher
         public static Dictionary<IMemberDefinition, string> clnamestomod = new Dictionary<IMemberDefinition, string>();
         public static void CheckNames(TypeDefinition tdef)
         {
-            String newTName = makeValidName(getName(tdef));
-            if (newTName != null)
+            //String newTName = makeValidName(getName(tdef));
+            //if (newTName != null)
+			if (nameIsObfuscated(getName(tdef)))
             {
                 setName(tdef, "" + (tdef.IsClass ? "cl" : "tp") + String.Format("{0:x4}", classid)/*newTName*/);//tdef.Name = (tdef.IsClass ? "cl" : "tp") + newTName;
                 classid++;
@@ -128,7 +129,8 @@ namespace NamePatcher
         }
         static void checkLocalDefinition<T>(T def, string prefix, int cmid, TypeDefinition btdef) where T : IMemberDefinition
         {
-            String newName = makeValidName(getName(def));
+			bool needsNewName = nameIsObfuscated(getName(def));
+            //String newName = makeValidName(getName(def));
             if (typeof(T) == typeof(MethodDefinition))
             {
                 MethodDefinition mdef = def as MethodDefinition;
@@ -136,7 +138,7 @@ namespace NamePatcher
                 if (pardef == null) { pardef = new Mono.Collections.Generic.Collection<ParameterDefinition>(); }
 
                 int parid = 1;
-                if (mdef.IsVirtual && newName != null)
+				if (mdef.IsVirtual && needsNewName)
                 {
                     prefix = "mdv";
                     List<MethodDefinition> baseVmdefList = new List<MethodDefinition>();
@@ -210,23 +212,24 @@ namespace NamePatcher
                             if (curBaseDef != null)
                                 vmGroup.applyingmdefs.Add(curBaseDef);
                         }
-                        newName = null;
+						needsNewName = false;
                     }
                 }
                 if (mdef.HasParameters)
                 {
                     foreach (ParameterDefinition pdef in mdef.Parameters)
                     {
-                        String parName = makeValidName(pdef.Name);
-                        if (parName != null)
+						if (nameIsObfuscated(pdef.Name))
                             pdef.Name = String.Format("par{0:x4}", parid);
                         ++parid;
                     }
                 }
             }
-            newName = (newName == null ? null : String.Format("{0}{1:x4}", prefix, cmid));
-            if (newName != null)
+            //newName = (newName == null ? null : String.Format("{0}{1:x4}", prefix, cmid));
+            //if (newName != null)
+			if (needsNewName)
             {
+				string newName = String.Format("{0}{1:x4}", prefix, cmid);
                 setName(def, newName);
             }
             if (typeof(T) == typeof(TypeDefinition))
@@ -278,7 +281,33 @@ namespace NamePatcher
             }
             return cmid;
         }
-        static String makeValidName(String origName)
+		static bool nameIsObfuscated(String origName)
+		{
+			if (origName == null || origName.Length == 0)
+				return true;
+			if (origName[0] >= '0' && origName[0] <= '9')
+				return true;
+			bool ret = (origName.Length == 5);
+			foreach (char ch in origName)
+			{
+				if (
+					(
+						((ch & 0x00FF) > 0x7F) || (((ch & 0xFF00) >> 8) > 0x7F)
+					) ||
+					(("" + ch).Normalize().ToCharArray()[0] > 0x00FF) ||
+					(((("" + ch).Normalize().ToCharArray()[0] & 0x00FF)) <= 0x20)
+				)
+				{
+					return true;
+				}
+				if (!((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z')))
+				{
+					ret = false;
+				}
+			}
+			return ret;
+		}
+        /*static String makeValidName(String origName)
         {
             if (origName == null)
                 return "nullname";
@@ -305,7 +334,7 @@ namespace NamePatcher
             if (modname)
                 return namebuilder.ToString();
             return null;
-        }
+        }*/
 
         public static void FinalizeNormalizing()
         {

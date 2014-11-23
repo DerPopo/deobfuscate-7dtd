@@ -18,7 +18,7 @@ namespace ManualDeobfuscator
 
 
 			OnElement ("DamageSource", mainModule.GetType ("EntityPlayer").BaseType.Resolve ().Methods,
-			    method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 2 && method.Name.Equals ("DamageEntity"),
+			    method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 3 && method.Name.Equals ("DamageEntity"),
 				method => {
 				RenameAction<TypeDefinition> ("DamageSource") (method.Parameters [0].ParameterType.Resolve ());
 				return true;
@@ -75,7 +75,6 @@ namespace ManualDeobfuscator
 				HasType (method.ReturnType, "System.Void"),
 			          RenameAction<MethodDefinition> ("RemovePlayer"));
 
-
 			RenameAction<TypeDefinition> ("ItemBase") (mainModule.GetType ("ItemBlock").BaseType.Resolve ());
 
 
@@ -84,11 +83,10 @@ namespace ManualDeobfuscator
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("positionToLPBlockOwner"));
 
 
-			OnElement ("Authenticator.usersToIDs", mainModule.GetType ("Authenticator").Fields,
-			          field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.String", "System.Object"),
+			OnElement ("Authenticator.usersToIDs", mainModule.GetType ("AuthenticationServer").Fields,
+			          field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.String", "Steamworks.CSteamID"),
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("usersToIDs"));
-
-
+				
 			OnElement ("PlayerDataFile.inventory", mainModule.GetType ("PlayerDataFile").Fields,
 			          field => field.Name.Equals ("inventory") && field.FieldType.IsArray,
 			          field => {

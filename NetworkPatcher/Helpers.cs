@@ -90,6 +90,35 @@ namespace NetworkPatcher
 
 		public static bool isObfuscated(String name)
 		{
+			if (name == null || name.Length == 0)
+				return true;
+			if (name[0] >= '0' && name[0] <= '9')
+				return true;
+			if (name.StartsWith("cl") || name.StartsWith("scl") || name.StartsWith("mdv") || 
+				name.StartsWith("md") || name.StartsWith("fd")  || name.StartsWith("prop"))
+				return true;
+			bool ret = (name.Length == 5);
+			foreach (char ch in name)
+			{
+				if (
+					(
+						((ch & 0x00FF) > 0x7F) || (((ch & 0xFF00) >> 8) > 0x7F)
+					) ||
+					(("" + ch).Normalize().ToCharArray()[0] > 0x00FF) ||
+					(((("" + ch).Normalize().ToCharArray()[0] & 0x00FF)) <= 0x20)
+				)
+				{
+					return true;
+				}
+				if (!((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z')))
+				{
+					ret = false;
+				}
+			}
+			return ret;
+		}
+		/*public static bool isObfuscated(String name)
+		{
 			if (name == null)
 				return true;
 			foreach (char ch in name)
@@ -109,7 +138,7 @@ namespace NetworkPatcher
 				name.StartsWith("md") || name.StartsWith("fd")  || name.StartsWith("prop"))
 				return true;
 			return false;
-		}
+		}*/
 	}
 }
 

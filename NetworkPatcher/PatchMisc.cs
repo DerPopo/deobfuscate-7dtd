@@ -134,7 +134,7 @@ namespace NetworkPatcher
 			}
 			MethodDefinition blockValueSetData = HelperClass.findMember<MethodDefinition>(module, blockValue, false, 
 				HelperClass.MethodReturnTypeComparer(blockValue.Name), 
-				HelperClass.MethodParametersComparer("System.Int32", "System.Byte", "System.Byte", "System.Byte", "System.Byte")
+				HelperClass.MethodParametersComparer("System.Int32", "System.Byte", "System.Byte", "System.Byte")
 			);
 			if (blockValueSetData != null)
 			{
@@ -282,9 +282,9 @@ namespace NetworkPatcher
 			//--------------------------AuthenticatePlayer--------------------------
 
 			HelperClass.executeActions<MethodDefinition>(module, "GameManager", new Func<MethodDefinition, bool>[]{
-				HelperClass.MethodParametersComparer("UnityEngine.NetworkView", "UnityEngine.NetworkPlayer", "System.String"),
+				HelperClass.MethodParametersComparer("UnityEngine.NetworkView", "UnityEngine.NetworkPlayer", "System.String", "System.String"),
 				HelperClass.MethodReturnTypeComparer("System.Void"),
-				HelperClass.MethodOPCodeComparer(new int[]{1,4,8,9,10,11,12}, 
+				HelperClass.MethodOPCodeComparer(new int[]{-13,-10,-6,-5,-4,-3,-2},//new int[]{1,4,8,9,10,11,12}, 
 					new OpCode[]{OpCodes.Ldsfld,OpCodes.Newarr,OpCodes.Stelem_Ref,OpCodes.Callvirt,OpCodes.Ldarg_2,OpCodes.Ldc_I4_1,OpCodes.Call},
 					null)
 			}, HelperClass.MemberNameSetter<MethodDefinition>("DenyPlayer"));
