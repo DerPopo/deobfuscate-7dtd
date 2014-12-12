@@ -126,6 +126,22 @@ namespace NetworkPatcher
 						memberPatchedByName["Close"] = true;
 					}
 				}
+				if (!memberPatchedByName["lastBytesSent"] && mdef.Name.Equals("thread_CommWriter"))
+				{
+					int[] patternResults = HelperClass.FindOPCodePattern(mdef, new OpCode[] {
+						OpCodes.Ldloc_S,
+						OpCodes.Callvirt,
+						OpCodes.Conv_I4,
+						OpCodes.Add,
+						OpCodes.Volatile,
+						OpCodes.Stfld
+					}, 5);
+					if (patternResults.Length == 1)
+					{
+						((FieldReference)mdef.Body.Instructions[patternResults[0]].Operand).Resolve().Name = "lastBytesSent";
+						memberPatchedByName ["lastBytesSent"] = true;
+					}
+				}
 			}
 			foreach (FieldDefinition fdef in packetQueueDef.Fields)
 			{
@@ -134,11 +150,11 @@ namespace NetworkPatcher
 					fdef.Name = "emptyList";
 					memberPatchedByName["emptyList"] = true;
 				}
-				else if (!memberPatchedByName["lastBytesSent"] && fdef.IsPublic && !fdef.IsStatic && fdef.FieldType.FullName.Equals("System.Int64") && Helpers.isObfuscated(fdef.Name))
+				/*else if (!memberPatchedByName["lastBytesSent"] && fdef.IsPublic && !fdef.IsStatic && fdef.FieldType.FullName.Equals("System.Int64") && Helpers.isObfuscated(fdef.Name))
 				{
 					fdef.Name = "lastBytesSent";
 					memberPatchedByName["lastBytesSent"] = true;
-				}
+				}*/
 			}
 
 			foreach (string name in memberPatchedByName.Keys)
@@ -153,6 +169,15 @@ namespace NetworkPatcher
 					logger.Info ("Patched PackageQueue." + name + ".");
 					NetworkPatcher.success++;
 				}
+			}
+
+			MethodDefinition getPackageQueueMdef = HelperClass.findMember<MethodDefinition>(module, connectionMgr, false, true, 
+				HelperClass.MethodParametersComparer("System.Int32", "System.Int32"),
+				HelperClass.MethodParameterNamesComparer("_clientId", "_channel"),
+				HelperClass.MethodReturnTypeComparer(packetQueueDef));
+			if (getPackageQueueMdef != null) {
+				getPackageQueueMdef.Name = "GetPackageQueue";
+				logger.Info("Patched ConnectionManager.GetPackageQueue.");
 			}
 		}
 	}

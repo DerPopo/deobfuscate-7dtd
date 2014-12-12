@@ -12,6 +12,7 @@ namespace NetworkPatcher
 	{
 		public static void Patch(Logger logger, AssemblyDefinition asmCSharp)
 		{
+			TypeDefinition tileEntitySecureLoot = null; TypeDefinition tileEntitySecureDoor = null;
 			HelperClass.SetLogger(logger);
 			ModuleDefinition module = asmCSharp.Modules[0];
 
@@ -60,6 +61,11 @@ namespace NetworkPatcher
 								getTileEntity.DeclaringType.Name = "TileEntity" + teType;
 								NetworkPatcher.success++;
 								logger.Info("Renamed TileEntity" + teType + ".");
+
+								if (teType.Equals("SecureLoot"))
+									tileEntitySecureLoot = getTileEntity.DeclaringType;
+								else if (teType.Equals("SecureDoor"))
+									tileEntitySecureDoor = getTileEntity.DeclaringType;
 							}
 							else
 							{
@@ -77,8 +83,7 @@ namespace NetworkPatcher
 					}
 				}
 
-				//TODO : deobfuscate TileEntity field names
-				/*TypeDefinition tileEntitySecureLoot = module.GetType("TileEntitySecureLoot");
+				//TypeDefinition tileEntitySecureLoot = module.GetType("TileEntitySecureLoot");
 				if (tileEntitySecureLoot == null)
 				{
 					logger.Warning ("Unable to patch TileEntitySecureLoot : class not found.");
@@ -86,10 +91,52 @@ namespace NetworkPatcher
 				}
 				else
 				{
-
+					DeobfuscateTileEntitySecure(module, tileEntitySecureLoot);
 					NetworkPatcher.success++;
-				}*/
+				}
+
+				//TypeDefinition tileEntitySecureDoor = module.GetType("TileEntitySecureDoor");
+				if (tileEntitySecureDoor == null)
+				{
+					logger.Warning ("Unable to patch TileEntitySecureDoor : class not found.");
+					NetworkPatcher.error++;
+				}
+				else
+				{
+					TypeDefinition tileEntitySecureDoorBase = tileEntitySecureDoor.BaseType.Resolve();
+					if (Helpers.isObfuscated(tileEntitySecureDoorBase.Name))
+						tileEntitySecureDoorBase.Name = "TileEntitySecureDoorBase";
+					DeobfuscateTileEntitySecure(module, tileEntitySecureDoorBase);
+					NetworkPatcher.success++;
+				}
 			}
+		}
+		private static void DeobfuscateTileEntitySecure(ModuleDefinition module, TypeDefinition tileEntityDef)
+		{
+			HelperClass.executeActions<FieldDefinition>(module, tileEntityDef, new HelperClass.GenericFuncContainer<FieldDefinition, bool>[]{
+				HelperClass.FieldTypeComparer("System.Collections.Generic.List<System.String>")
+			}, HelperClass.MemberNameSetter<FieldDefinition>("allowedUsers"));
+
+			MethodDefinition setOwnerMethod = HelperClass.findMember<MethodDefinition>(module, tileEntityDef, false, true, 
+				HelperClass.MemberNameComparer<MethodDefinition>("SetOwner"), 
+				HelperClass.MethodOPCodeComparer(new int[]{ 2, 3, 4 }, new OpCode[] {OpCodes.Ldarg_0,OpCodes.Ldarg_1,OpCodes.Stfld}, null)
+			);
+			if (setOwnerMethod != null)
+				((FieldReference)setOwnerMethod.Body.Instructions[4].Operand).Resolve().Name = "owner";
+
+			MethodDefinition setLockedMethod = HelperClass.findMember<MethodDefinition>(module, tileEntityDef, false, true, 
+				HelperClass.MemberNameComparer<MethodDefinition>("SetLocked"), 
+				HelperClass.MethodOPCodeComparer(new int[]{ 2, 3, 4 }, new OpCode[] {OpCodes.Ldarg_0,OpCodes.Ldarg_1,OpCodes.Stfld}, null)
+			);
+			if (setLockedMethod != null)
+				((FieldReference)setLockedMethod.Body.Instructions[4].Operand).Resolve().Name = "isLocked";
+
+			MethodDefinition hasPasswordMethod = HelperClass.findMember<MethodDefinition>(module, tileEntityDef, false, true, 
+				HelperClass.MemberNameComparer<MethodDefinition>("HasPassword"), 
+				HelperClass.MethodOPCodeComparer(new int[]{ 0, 1, 2 }, new OpCode[] {OpCodes.Ldarg_0,OpCodes.Ldfld,OpCodes.Brfalse}, null)
+			);
+			if (hasPasswordMethod != null)
+				((FieldReference)hasPasswordMethod.Body.Instructions[1].Operand).Resolve().Name = "password";
 		}
 	}
 }

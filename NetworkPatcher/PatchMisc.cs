@@ -194,17 +194,17 @@ namespace NetworkPatcher
 				TypeDefinition helpersClass = cultureInfoField.DeclaringType;
 				helpersClass.Name = "Helpers";
 				HelperClass.executeActions<FieldDefinition> (module, helpersClass,
-					new Func<FieldDefinition, bool>[]{HelperClass.FieldTypeComparer ("System.String"),
+					new HelperClass.GenericFuncContainer<FieldDefinition, bool>[]{HelperClass.FieldTypeComparer ("System.String"),
 						HelperClass.FieldAttributeComparer(FieldAttributes.Public | FieldAttributes.Static)},
 					HelperClass.MemberNameSetter<FieldDefinition>("models_key")
 				);
 				HelperClass.executeActions<FieldDefinition> (module, helpersClass,
-					new Func<FieldDefinition, bool>[]{HelperClass.FieldTypeComparer ("System.Collections.Generic.Dictionary<System.String,System.String>"),
+					new HelperClass.GenericFuncContainer<FieldDefinition, bool>[]{HelperClass.FieldTypeComparer ("System.Collections.Generic.Dictionary<System.String,System.String>"),
 						HelperClass.FieldAttributeComparer(FieldAttributes.Public | FieldAttributes.Static)},
 					HelperClass.MemberNameSetter<FieldDefinition>("modelsByXml")
 				);
 				HelperClass.executeActions<MethodDefinition>(module, helpersClass,
-					new Func<MethodDefinition, bool>[]{
+					new HelperClass.GenericFuncContainer<MethodDefinition, bool>[]{
 						HelperClass.MethodParametersComparer("System.String","System.String"),
 						HelperClass.MethodReturnTypeComparer("System.String"),
 						HelperClass.MethodAttributeComparer(MethodAttributes.Public | MethodAttributes.Static),
@@ -215,7 +215,7 @@ namespace NetworkPatcher
 					HelperClass.MemberNameSetter<MethodDefinition>("decrypt")
 				);
 				HelperClass.executeActions<MethodDefinition> (module, helpersClass,
-					new Func<MethodDefinition, bool>[]{
+					new HelperClass.GenericFuncContainer<MethodDefinition, bool>[]{
 						HelperClass.MethodParametersComparer("System.String"),
 						HelperClass.MethodReturnTypeComparer("System.String"),
 						HelperClass.MethodAttributeComparer(MethodAttributes.Public | MethodAttributes.Static),
@@ -281,19 +281,29 @@ namespace NetworkPatcher
 			TileEntityPatcher.Patch(logger, asmCSharp);
 			//--------------------------AuthenticatePlayer--------------------------
 
-			HelperClass.executeActions<MethodDefinition>(module, "GameManager", new Func<MethodDefinition, bool>[]{
-				HelperClass.MethodParametersComparer("UnityEngine.NetworkView", "UnityEngine.NetworkPlayer", "System.String", "System.String"),
+			HelperClass.executeActions<MethodDefinition>(module, "GameManager", new HelperClass.GenericFuncContainer<MethodDefinition, bool>[]{
+				HelperClass.MethodParametersComparer("UnityEngine.NetworkView", "UnityEngine.NetworkPlayer", "System.String", "System.String", "EnumAuthenticationResult"),
 				HelperClass.MethodReturnTypeComparer("System.Void"),
 				HelperClass.MethodOPCodeComparer(new int[]{-13,-10,-6,-5,-4,-3,-2},//new int[]{1,4,8,9,10,11,12}, 
 					new OpCode[]{OpCodes.Ldsfld,OpCodes.Newarr,OpCodes.Stelem_Ref,OpCodes.Callvirt,OpCodes.Ldarg_2,OpCodes.Ldc_I4_1,OpCodes.Call},
 					null)
 			}, HelperClass.MemberNameSetter<MethodDefinition>("DenyPlayer"));
 
-			HelperClass.executeActions<MethodDefinition>(module, "GameManager", new Func<MethodDefinition, bool>[]{
+			HelperClass.executeActions<MethodDefinition>(module, "GameManager", new HelperClass.GenericFuncContainer<MethodDefinition, bool>[]{
 				HelperClass.MethodParametersComparer("UnityEngine.NetworkViewID", "UnityEngine.NetworkPlayer", "System.String", "System.String", "System.String", "System.String"),
 				HelperClass.MethodReturnTypeComparer("System.Void"),
 				HelperClass.MethodAttributeComparer(MethodAttributes.Public)
 			}, HelperClass.MemberNameSetter<MethodDefinition>("AuthenticatePlayer"));
+
+			//---------------------------------Block--------------------------------
+			TypeDefinition blockBaseType = HelperClass.findType(module, false, 
+				HelperClass.MemberNameComparer<MethodDefinition>("IsPlant"), 
+				HelperClass.MemberNameComparer<FieldDefinition> ("isMultiBlock"), 
+				HelperClass.MemberNameComparer<FieldDefinition> ("itemsToDrop"));
+			if (blockBaseType != null)
+				blockBaseType.Name = "Block";
+
+
 		}
 
 		private static string sdtd_decrypt(byte[] _data)

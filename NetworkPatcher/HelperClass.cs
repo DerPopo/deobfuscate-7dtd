@@ -15,11 +15,38 @@ namespace NetworkPatcher
 			logger = _logger;
 		}
 
-		public static Func<T,bool> MemberNameComparer<T>(string name) where T : IMemberDefinition
+		public static GenericFuncContainer<T,bool> MemberNameComparer<T>(string name) where T : IMemberDefinition
 		{
-			return member => {
+			return new GenericFuncContainer<T,bool>(member => {
 				return member.Name.Equals(name);
-			};
+			});
+		}
+		//doesn't work on System.Object
+		public static GenericFuncContainer<T,bool> DeclaringTypeBaseTypeComparer<T>(TypeDefinition baseType) where T : IMemberDefinition
+		{
+			return new GenericFuncContainer<T,bool>(member => {
+				TypeDefinition curBaseType = member.DeclaringType;
+				while (curBaseType != null && curBaseType.BaseType != null)
+				{
+					if (curBaseType.Equals(baseType))
+						return true;
+					curBaseType = curBaseType.BaseType.Resolve();
+				}
+				return false;
+			});
+		}
+		public static GenericFuncContainer<TypeDefinition,bool> BaseTypeComparer(TypeDefinition baseType)
+		{
+			return new GenericFuncContainer<TypeDefinition,bool>(type => {
+				TypeDefinition curBaseType = type;
+				while (curBaseType != null && curBaseType.BaseType != null)
+				{
+					if (curBaseType.Equals(baseType))
+						return true;
+					curBaseType = curBaseType.BaseType.Resolve();
+				}
+				return false;
+			});
 		}
 		protected static string writeGenericArgument(TypeReference tref)
 		{
@@ -42,10 +69,10 @@ namespace NetworkPatcher
 			}
 			return retBuilder.ToString() + ",";
 		}
-		public static Func<FieldDefinition,bool> FieldTypeComparer(string fieldType)
+		public static GenericFuncContainer<FieldDefinition,bool> FieldTypeComparer(string fieldType)
 		{
-			return field => {
-				TypeReference tref = field.FieldType;
+			return new GenericFuncContainer<FieldDefinition,bool>(field => {
+				TypeReference tref = field.FieldType; 
 				TypeDefinition type = field.FieldType.Resolve();
 				if (type == null)
 					return false;
@@ -62,41 +89,65 @@ namespace NetworkPatcher
 					typeNameBuilder[typeNameBuilder.Length-1] = '>';
 				}
 				return typeNameBuilder.ToString().Equals(fieldType);
-			};
+			});
 		}
-		public static Func<FieldDefinition,bool> FieldAttributeComparer(Mono.Cecil.FieldAttributes attrs)
+		public static GenericFuncContainer<FieldDefinition,bool> FieldAttributeComparer(Mono.Cecil.FieldAttributes attrs)
 		{
-			return field => {
+			return new GenericFuncContainer<FieldDefinition,bool>(field => {
 				return (field.Attributes & attrs) == attrs;
-			};
+			});
 		}
-		public static Func<FieldDefinition,bool> FieldNegAttributeComparer(Mono.Cecil.FieldAttributes negAttrs)
+		public static GenericFuncContainer<FieldDefinition,bool> FieldNegAttributeComparer(Mono.Cecil.FieldAttributes negAttrs)
 		{
-			return field => {
+			return new GenericFuncContainer<FieldDefinition,bool>(field => {
 				return (field.Attributes & negAttrs) == 0;
-			};
+			});
 		}
-		public static Func<MethodDefinition,bool> MethodAttributeComparer(Mono.Cecil.MethodAttributes attrs)
+		public static GenericFuncContainer<MethodDefinition,bool> MethodAttributeComparer(Mono.Cecil.MethodAttributes attrs)
 		{
-			return method => {
+			return new GenericFuncContainer<MethodDefinition,bool>(method => {
 				return (method.Attributes & attrs) == attrs;
-			};
+			});
 		}
-		public static Func<MethodDefinition,bool> MethodNegAttributeComparer(Mono.Cecil.MethodAttributes negAttrs)
+		public static GenericFuncContainer<MethodDefinition,bool> MethodNegAttributeComparer(Mono.Cecil.MethodAttributes negAttrs)
 		{
-			return method => {
+			return new GenericFuncContainer<MethodDefinition,bool>(method => {
 				return (method.Attributes & negAttrs) == 0;
-			};
+			});
 		}
-		public static Func<MethodDefinition,bool> MethodReturnTypeComparer(string returnType)
+		public static GenericFuncContainer<TypeDefinition,bool> TypeAttributeComparer(Mono.Cecil.TypeAttributes attrs)
 		{
-			return method => {
+			return new GenericFuncContainer<TypeDefinition,bool>(type => {
+				return (type.Attributes & attrs) == attrs;
+			});
+		}
+		public static GenericFuncContainer<TypeDefinition,bool> TypeNegAttributeComparer(Mono.Cecil.TypeAttributes negAttrs)
+		{
+			return new GenericFuncContainer<TypeDefinition,bool>(type => {
+				return (type.Attributes & negAttrs) == 0;
+			});
+		}
+		public static GenericFuncContainer<MethodDefinition,bool> MethodReturnTypeComparer(string returnType)
+		{
+			return new GenericFuncContainer<MethodDefinition,bool>(method => {
 				return method.ReturnType.FullName.Equals(returnType);
-			};
+			});
 		}
-		public static Func<MethodDefinition,bool> MethodParametersComparer(params string[] parameterTypes)
+		public static GenericFuncContainer<MethodDefinition,bool> MethodReturnTypeComparer(TypeDefinition returnType)
 		{
-			return method => {
+			return new GenericFuncContainer<MethodDefinition,bool>(method => {
+				TypeDefinition curReturnType = method.ReturnType.Resolve();
+				if (curReturnType == null)
+				{
+					HelperClass.OnError(ErrorCode.RETURNTYPE_RESOLVE_ERROR, method.FullName, Environment.StackTrace);
+					return false;
+				}
+				return curReturnType.Equals(returnType);
+			});
+		}
+		public static GenericFuncContainer<MethodDefinition,bool> MethodParametersComparer(params string[] parameterTypes)
+		{
+			return new GenericFuncContainer<MethodDefinition,bool>(method => {
 				if (method.Parameters.Count != parameterTypes.Length)
 					return false;
 				for (int i = 0; i < method.Parameters.Count; i++)
@@ -105,16 +156,48 @@ namespace NetworkPatcher
 						return false;
 				}
 				return true;
-			};
+			});
 		}
-		public static Func<MethodDefinition,bool> MethodOPCodeComparer(int[] indices, OpCode[] opCodes, object[] operands)
+		public static GenericFuncContainer<MethodDefinition,bool> MethodParametersComparer(TypeDefinition[] parameterTypes)
+		{
+			return new GenericFuncContainer<MethodDefinition,bool>(method => {
+				if (method.Parameters.Count != parameterTypes.Length)
+					return false;
+				for (int i = 0; i < method.Parameters.Count; i++)
+				{
+					TypeDefinition curParameterType = method.Parameters[i].ParameterType.Resolve();
+					if (curParameterType == null)
+					{
+						HelperClass.OnError(ErrorCode.PARAMETER_RESOLVE_ERROR, i, method.FullName, Environment.StackTrace);
+						return false;
+					}
+					if (parameterTypes[i] != null && !curParameterType.Equals(parameterTypes[i]))
+						return false;
+				}
+				return true;
+			});
+		}
+		public static GenericFuncContainer<MethodDefinition,bool> MethodParameterNamesComparer(params string[] parameterNames)
+		{
+			return new GenericFuncContainer<MethodDefinition,bool>(method => {
+				if (method.Parameters.Count != parameterNames.Length)
+					return false;
+				for (int i = 0; i < method.Parameters.Count; i++)
+				{
+					if (parameterNames[i].Length != 0 && !method.Parameters[i].Name.Equals(parameterNames[i]))
+						return false;
+				}
+				return true;
+			});
+		}
+		public static GenericFuncContainer<MethodDefinition,bool> MethodOPCodeComparer(int[] indices, OpCode[] opCodes, object[] operands)
 		{
 			if (indices.Length != opCodes.Length || (operands != null && operands.Length != opCodes.Length))
 			{
 				OnError(ErrorCode.INVALID_PARAMETER, "MethodOPCodeComparer : all arrays should have the same size");
 				return null;
 			}
-			return method => {
+			return new GenericFuncContainer<MethodDefinition,bool>(method => {
 				Instruction[] instrs = method.Body.Instructions.ToArray();
 				for (int i = 0; i < indices.Length; i++)
 				{
@@ -125,10 +208,51 @@ namespace NetworkPatcher
 						return false;
 				}
 				return true;
-			};
+			});
 		}
 
-		public static T findMember<T>(ModuleDefinition module, object type, bool allowMultipleResults, bool mustHaveResult, params Func<T,bool>[] comparers)
+		//only returns true if all comparers return true
+		//used for findType to make sure multiple attributes apply to a member
+		public static GenericFuncContainer<T,bool> CombinedComparer<T>(params GenericFuncContainer<T,bool>[] childComparers)
+		{
+			return new GenericFuncContainer<T,bool>(member => {
+				foreach (GenericFuncContainer<T,bool> comparer in childComparers)
+				{
+					if (!comparer.Execute(member))
+						return false;
+				}
+				return true;
+			});
+		}
+		//used to compare attributes of a nested type's member
+		public static GenericFuncContainer<TypeDefinition,bool> TypeMembersComparer(params FuncContainer[] childComparers)
+		{
+			return new GenericFuncContainer<TypeDefinition,bool>(type => {
+				Dictionary<FuncContainer,bool> comparersApply = new Dictionary<FuncContainer, bool>();
+				foreach (FuncContainer comparer in childComparers)
+					comparersApply.Add(comparer, false);
+
+				foreach (MethodDefinition method in type.Methods)
+					compareMember<MethodDefinition>(method, comparersApply);
+				foreach (FieldDefinition field in type.Fields)
+					compareMember<FieldDefinition>(field, comparersApply);
+				foreach (PropertyDefinition property in type.Properties)
+					compareMember<PropertyDefinition>(property, comparersApply);
+				foreach (TypeDefinition curType in type.NestedTypes)
+					compareMember<TypeDefinition>(curType, comparersApply);
+
+				foreach (KeyValuePair<FuncContainer,bool> comparerApplies in comparersApply)
+				{
+					if (!comparerApplies.Value)
+					{
+						return false;
+					}
+				}
+				return true;
+			});
+		}
+
+		public static T findMember<T>(ModuleDefinition module, object type, bool allowMultipleResults, bool mustHaveResult, params GenericFuncContainer<T,bool>[] comparers)
 			where T : IMemberDefinition
 		{
 			T[] ret = findMembers<T>(module, type, comparers);
@@ -150,12 +274,12 @@ namespace NetworkPatcher
 			}
 			return ret[0];
 		}
-		public static T findMember<T>(ModuleDefinition module, object type, bool allowMultipleResults, params Func<T,bool>[] comparers)
+		public static T findMember<T>(ModuleDefinition module, object type, bool allowMultipleResults, params GenericFuncContainer<T,bool>[] comparers)
 			where T : IMemberDefinition
 		{
 			return findMember<T>(module, type, allowMultipleResults, true, comparers);
 		}
-		public static T[] findMembers<T>(ModuleDefinition module, object type, params Func<T,bool>[] comparers)
+		public static T[] findMembers<T>(ModuleDefinition module, object type, params GenericFuncContainer<T,bool>[] comparers)
 			where T : IMemberDefinition
 		{
 			if (type != null)
@@ -183,9 +307,9 @@ namespace NetworkPatcher
 				foreach (T member in memberArray)
 				{
 					bool matches = true;
-					foreach (Func<T,bool> comparer in comparers)
+					foreach (GenericFuncContainer<T,bool> comparer in comparers)
 					{
-						if (comparer == null || !comparer(member)) {
+						if (comparer == null || !comparer.Execute(member)) {
 							matches = false;
 							break;
 						}
@@ -204,6 +328,80 @@ namespace NetworkPatcher
 			}
 		}
 
+		//comparers : Dictionary<FuncContainer comparer, bool doesApply>
+		//	doesApply : set to true if the comparer returned true; not set to false otherwise
+		private static void compareMember<T>(T member, Dictionary<FuncContainer,bool> comparers)
+		{
+			FuncContainer[] keys = new FuncContainer[comparers.Count];
+			comparers.Keys.CopyTo(keys, 0);
+			for (int i = 0; i < comparers.Count; i++)
+			{
+				FuncContainer comparer = keys[i];
+				if (comparer.GetArgType().Equals(typeof(T)) && ((bool)comparer.Execute(member)))
+				{
+					comparers[comparer] = true;
+				}
+			}
+		}
+
+		//Executes the comparers on all matching type members.
+		//(Almost) The same as getting the declaring type of findMembers with a null type,
+		//  except that findTypes works with multiple member types to compare.
+		public static TypeDefinition[] findTypes(ModuleDefinition module, params FuncContainer[] comparers)
+		{
+			List<TypeDefinition> ret = new List<TypeDefinition>();
+
+			Dictionary<FuncContainer,bool> comparersApply = new Dictionary<FuncContainer, bool>();
+			foreach (FuncContainer comparer in comparers)
+				comparersApply.Add(comparer, false);
+
+			foreach (TypeDefinition type in module.Types)
+			{
+				foreach (MethodDefinition method in type.Methods)
+					compareMember<MethodDefinition>(method, comparersApply);
+				foreach (FieldDefinition field in type.Fields)
+					compareMember<FieldDefinition>(field, comparersApply);
+				foreach (PropertyDefinition property in type.Properties)
+					compareMember<PropertyDefinition>(property, comparersApply);
+				foreach (TypeDefinition curType in type.NestedTypes)
+					compareMember<TypeDefinition>(curType, comparersApply);
+
+				bool typeDoesMatch = true;
+				foreach (KeyValuePair<FuncContainer,bool> comparerApplies in comparersApply)
+				{
+					if (!comparerApplies.Value)
+					{
+						typeDoesMatch = false;
+						break;
+					}
+				}
+				if (typeDoesMatch)
+					ret.Add(type);
+
+				foreach (FuncContainer comparer in comparers)
+					comparersApply[comparer] = false;
+			}
+			return ret.ToArray();
+		}
+		//Executes the comparers on all matching type members.
+		//(Almost) The same as getting the declaring type of findMember with a null type,
+		//  except that findType works with multiple member types to compare.
+		public static TypeDefinition findType(ModuleDefinition module, bool allowMultipleResults, params FuncContainer[] comparers)
+		{
+			TypeDefinition[] ret = findTypes(module, comparers);
+			if (ret == null || ret.Length == 0)
+			{
+				OnError(ErrorCode.MEMBER_NOT_FOUND, "TypeDefinition", Environment.StackTrace);
+				return null;
+			}
+			if (!allowMultipleResults && ret.Length > 1)
+			{
+				OnError(ErrorCode.MULTIPLE_RESULTS, "TypeDefinition", Environment.StackTrace);
+				return null;
+			}
+			return ret[0];
+		}
+
 		public static Func<MethodDefinition,bool> MethodAttributeSetter(Mono.Cecil.MethodAttributes attrs)
 		{
 			return method => {
@@ -219,7 +417,7 @@ namespace NetworkPatcher
 				return true;
 			};
 		}
-		public static void executeActions<T>(ModuleDefinition module, object type, Func<T,bool>[] comparers, params Func<T,bool>[] actions)
+		public static void executeActions<T>(ModuleDefinition module, object type, GenericFuncContainer<T,bool>[] comparers, params Func<T,bool>[] actions)
 			where T : IMemberDefinition
 		{
 			T[] members = findMembers<T>(module, type, comparers);
@@ -235,21 +433,21 @@ namespace NetworkPatcher
 				logger.Info("Patched " + member.FullName + ".");
 			}
 		}
-		public static void executeActions(ModuleDefinition module, object type, params Func<TypeDefinition,bool>[] actions)
+		public static void executeActions(ModuleDefinition module, object type, params GenericFuncContainer<TypeDefinition,bool>[] actions)
 		{
 			TypeDefinition tdef = (type is string) ? module.GetType((string)type) : ((type is TypeDefinition) ? ((TypeDefinition)type) : null);
 			if (tdef == null) {
 				OnError(ErrorCode.TYPE_NOT_FOUND, (type is string) ? ((string)type) : "(null)");
 				return;
 			}
-			foreach (Func<TypeDefinition,bool> action in actions)
+			foreach (GenericFuncContainer<TypeDefinition,bool> action in actions)
 			{
-				if (!action(tdef))
+				if (!action.Execute(tdef))
 					OnError(ErrorCode.ACTION_FAILED, "type " + tdef.FullName);
 			}
 			logger.Info("Patched " + tdef.FullName + ".");
 		}
-		public static void executeActions<T>(T type, params Func<T,bool>[] actions)
+		public static void executeActions<T>(T type, params GenericFuncContainer<T,bool>[] actions)
 			where T : IMemberDefinition
 		{
 			string fullName;
@@ -259,9 +457,9 @@ namespace NetworkPatcher
 			else
 				fullName = type.ToString();
 
-			foreach (Func<T,bool> action in actions)
+			foreach (GenericFuncContainer<T,bool> action in actions)
 			{
-				if (!action(type))
+				if (!action.Execute(type))
 					OnError(ErrorCode.ACTION_FAILED, fullName);
 			}
 			logger.Info("Patched " + type.FullName + ".");
@@ -301,11 +499,103 @@ namespace NetworkPatcher
 					}
 				}
 				if (matches)
-					results.Add(i);
+					results.Add(i + offset);
 			}
 			return results.ToArray();
 		}
 
+		public static bool RenameVirtualMethod(MethodDefinition method, string newName)
+		{
+			TypeDefinition[] parameters = new TypeDefinition[method.Parameters.Count];
+			string oldName = method.Name;
+			for (int i = 0; i < parameters.Length; i++)
+			{
+				parameters[i] = method.Parameters[i].ParameterType.Resolve ();
+				if (parameters[i] == null)
+				{
+					HelperClass.OnError(ErrorCode.PARAMETER_RESOLVE_ERROR, i, method.FullName, Environment.StackTrace);
+					return false;
+				}
+			}
+
+			GenericFuncContainer<MethodDefinition,bool> vMethodComparer = CombinedComparer(
+				MethodParametersComparer(parameters), 
+				MemberNameComparer<MethodDefinition>(method.Name), 
+				MethodAttributeComparer(Mono.Cecil.MethodAttributes.Virtual));
+
+			TypeDefinition curBaseType = method.DeclaringType;
+			while (curBaseType != null)
+			{
+				if (findMember<MethodDefinition>(null, curBaseType, true, false, vMethodComparer) == null)
+					break;
+				TypeReference curBaseRef = curBaseType.BaseType;
+				if (curBaseRef == null)
+					break;
+				TypeDefinition curBaseDef = curBaseRef.Resolve();
+				if (curBaseDef == null)
+					break;
+				curBaseType = curBaseDef;
+			}
+
+			vMethodComparer = CombinedComparer(vMethodComparer, DeclaringTypeBaseTypeComparer<MethodDefinition>(curBaseType));
+			//doesn't work for multiple assemblies
+			foreach (MethodDefinition curVMethod in findMembers<MethodDefinition>(curBaseType.Module, null, vMethodComparer))
+			{
+				curVMethod.Name = newName;
+			}
+			return true;
+		}
+
+		public interface FuncContainer
+		{
+			Type GetArgType();
+			Type GetRetType();
+			object Execute(object arg1);
+		}
+		public class GenericFuncContainer<T,K> : FuncContainer
+		{
+			private static MethodInfo genericExecuteMethod;
+			static GenericFuncContainer()
+			{
+				genericExecuteMethod = typeof(GenericFuncContainer<T,K>).GetMethod("Execute", new Type[]{typeof(T)});
+			}
+			public Func<T,K> value;
+			public GenericFuncContainer(Func<T,K> value)
+			{
+				this.value = value;
+			}
+			public Type GetArgType()
+			{
+				return typeof(T);
+			}
+			public Type GetRetType()
+			{
+				return typeof(K);
+			}
+			public K Execute(T arg1)
+			{
+				return value(arg1);
+			}
+			public object Execute(object arg1)
+			{
+				//T generic_arg1;
+				if (arg1 == null) {
+					if (typeof(T).IsValueType)
+						throw new InvalidCastException("arg1 must be a boxed value!");
+					//List<T> nullContainer = new List<T>();
+					//workaround for compiler errors (I already checked if it is a value type before)
+					//nullContainer.GetType().GetMethod("Add", new Type[]{typeof(T)}).Invoke(nullContainer, new object[]{ null });
+					//generic_arg1 = nullContainer[0];
+				}
+				else if (!typeof(T).IsAssignableFrom(arg1.GetType()))
+					throw new InvalidCastException("Cannot assign arg1 to " + typeof(T).FullName + "!");
+				else
+				{
+					//generic_arg1 = arg1 as T;
+				}
+				return genericExecuteMethod.Invoke(this, new object[]{ arg1 });
+			}
+		}
 
 		class ErrorInfo : Attribute
 		{
@@ -329,6 +619,10 @@ namespace NetworkPatcher
 			ACTION_FAILED,
 			[ErrorInfo("Invalid parameter : {0}!", 4)]
 			INVALID_PARAMETER,
+			[ErrorInfo("Unable to resolve the type of parameter {0} of {1}!\r\n{2}", 5)]
+			PARAMETER_RESOLVE_ERROR,
+			[ErrorInfo("Unable to resolve the return type of {1}!\r\n{2}", 6)]
+			RETURNTYPE_RESOLVE_ERROR,
 		};
 		private static void OnError(ErrorCode error, params object[] args)
 		{
