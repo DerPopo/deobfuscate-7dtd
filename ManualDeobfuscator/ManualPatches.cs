@@ -84,7 +84,7 @@ namespace ManualDeobfuscator
 
 
 			OnElement ("Authenticator.usersToIDs", mainModule.GetType ("AuthenticationServer").Fields,
-			          field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.String", "Steamworks.CSteamID"),
+			          field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.String", "scl0000"),
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("usersToIDs"));
 				
 			OnElement ("PlayerDataFile.inventory", mainModule.GetType ("PlayerDataFile").Fields,
