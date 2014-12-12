@@ -85,7 +85,13 @@ namespace ManualDeobfuscator
 
 			OnElement ("Authenticator.usersToIDs", mainModule.GetType ("AuthenticationServer").Fields,
 			          field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.String", "scl0000"),
-			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("usersToIDs"));
+					MakeFieldPublicAction, RenameAction<FieldDefinition> ("usersToIDs"), field => {
+					TypeDefinition steamUserInfo = ((GenericInstanceType)field.FieldType).GenericArguments[1].Resolve();
+					RenameAction<TypeDefinition>("SteamUserInfo")(steamUserInfo);
+					steamUserInfo.IsPublic = true;
+					return true;
+				}
+			);
 				
 			OnElement ("PlayerDataFile.inventory", mainModule.GetType ("PlayerDataFile").Fields,
 			          field => field.Name.Equals ("inventory") && field.FieldType.IsArray,
