@@ -82,16 +82,27 @@ namespace ManualDeobfuscator
 			          field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "Vector3i", "PersistentPlayerData"),
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("positionToLPBlockOwner"));
 
+			/*{
+				FieldDefinition usersToIdsField = Find ("AuthenticationServer.usersToIDs", mainModule.GetType ("AuthenticationServer").Fields,
+					                                 field => HasType (field.FieldType, "System.Collections.Generic.Dictionary"));
+				MakeFieldPublicAction (usersToIdsField);
+				RenameAction<FieldDefinition> ("usersToIDs") (usersToIdsField);
 
+				GenericInstanceType genType = (GenericInstanceType)usersToIdsField.FieldType;
+				TypeReference subClassRef = genType.GenericArguments [1];
+				TypeDefinition subClass = subClassRef.Resolve ();
+				subClass.IsPublic = true;//MakeTypePublicAction (subClass);
+				subClass.IsNotPublic = false;
+				subClass.IsPublic = true;
+				RenameAction<TypeDefinition> ("SteamUserInfo") (subClass);
+			}
+			OnElement("Authenticator.SteamUserInfo", mainModule.GetType("AuthenticationServer").NestedTypes,
+				type => type.Name.Equals("scl0000"),
+				type => type.IsPublic = true, RenameAction<TypeDefinition>("SteamUserInfo"));
 			OnElement ("Authenticator.usersToIDs", mainModule.GetType ("AuthenticationServer").Fields,
 			          field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.String", "scl0000"),
-					MakeFieldPublicAction, RenameAction<FieldDefinition> ("usersToIDs"), field => {
-					TypeDefinition steamUserInfo = ((GenericInstanceType)field.FieldType).GenericArguments[1].Resolve();
-					RenameAction<TypeDefinition>("SteamUserInfo")(steamUserInfo);
-					steamUserInfo.IsPublic = true;
-					return true;
-				}
-			);
+					MakeFieldPublicAction, RenameAction<FieldDefinition> ("usersToIDs")
+			);*/
 				
 			OnElement ("PlayerDataFile.inventory", mainModule.GetType ("PlayerDataFile").Fields,
 			          field => field.Name.Equals ("inventory") && field.FieldType.IsArray,

@@ -282,11 +282,11 @@ namespace NetworkPatcher
 			//--------------------------AuthenticatePlayer--------------------------
 
 			HelperClass.executeActions<MethodDefinition>(module, "GameManager", new HelperClass.GenericFuncContainer<MethodDefinition, bool>[]{
-				HelperClass.MethodParametersComparer("UnityEngine.NetworkView", "UnityEngine.NetworkPlayer", "System.String", "System.String", "EnumAuthenticationResult"),
+				HelperClass.MethodParametersComparer("ClientInfo", "System.String", "EnumAuthenticationResult"),
 				HelperClass.MethodReturnTypeComparer("System.Void"),
-				HelperClass.MethodOPCodeComparer(new int[]{-13,-10,-6,-5,-4,-3,-2},//new int[]{1,4,8,9,10,11,12}, 
+				/*HelperClass.MethodOPCodeComparer(new int[]{-13,-10,-6,-5,-4,-3,-2},//new int[]{1,4,8,9,10,11,12}, 
 					new OpCode[]{OpCodes.Ldsfld,OpCodes.Newarr,OpCodes.Stelem_Ref,OpCodes.Callvirt,OpCodes.Ldarg_2,OpCodes.Ldc_I4_1,OpCodes.Call},
-					null)
+					null)*/
 			}, HelperClass.MemberNameSetter<MethodDefinition>("DenyPlayer"));
 
 			HelperClass.executeActions<MethodDefinition>(module, "GameManager", new HelperClass.GenericFuncContainer<MethodDefinition, bool>[]{
