@@ -133,15 +133,6 @@ namespace ManualDeobfuscator
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("connectedClients"));
 
 
-			//moved to ClientInfo
-			/*OnElement ("ConnectionManager.mapClientToEntity", mainModule.GetType ("ConnectionManager").Fields,
-			          field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.Int32", "System.Int32"),
-			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("mapClientToEntity"));*/
-
-			OnElement ("ConnectionManager.mapEntityToClients", mainModule.GetType ("ConnectionManager").Fields,
-				field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.Int32", "System.Collections.Generic.List"),
-				MakeFieldPublicAction, RenameAction<FieldDefinition> ("mapEntityToClients"));
-
 			// Console and ConsoleCommand
 			{
 				TypeDefinition typeConsole = null;
