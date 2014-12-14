@@ -81,28 +81,6 @@ namespace ManualDeobfuscator
 			OnElement ("PersistentPlayerList.positionToLPBlockOwner", mainModule.GetType ("PersistentPlayerList").Fields,
 			          field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "Vector3i", "PersistentPlayerData"),
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("positionToLPBlockOwner"));
-
-			/*{
-				FieldDefinition usersToIdsField = Find ("AuthenticationServer.usersToIDs", mainModule.GetType ("AuthenticationServer").Fields,
-					                                 field => HasType (field.FieldType, "System.Collections.Generic.Dictionary"));
-				MakeFieldPublicAction (usersToIdsField);
-				RenameAction<FieldDefinition> ("usersToIDs") (usersToIdsField);
-
-				GenericInstanceType genType = (GenericInstanceType)usersToIdsField.FieldType;
-				TypeReference subClassRef = genType.GenericArguments [1];
-				TypeDefinition subClass = subClassRef.Resolve ();
-				subClass.IsPublic = true;//MakeTypePublicAction (subClass);
-				subClass.IsNotPublic = false;
-				subClass.IsPublic = true;
-				RenameAction<TypeDefinition> ("SteamUserInfo") (subClass);
-			}
-			OnElement("Authenticator.SteamUserInfo", mainModule.GetType("AuthenticationServer").NestedTypes,
-				type => type.Name.Equals("scl0000"),
-				type => type.IsPublic = true, RenameAction<TypeDefinition>("SteamUserInfo"));
-			OnElement ("Authenticator.usersToIDs", mainModule.GetType ("AuthenticationServer").Fields,
-			          field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.String", "scl0000"),
-					MakeFieldPublicAction, RenameAction<FieldDefinition> ("usersToIDs")
-			);*/
 				
 			OnElement ("PlayerDataFile.inventory", mainModule.GetType ("PlayerDataFile").Fields,
 			          field => field.Name.Equals ("inventory") && field.FieldType.IsArray,
@@ -155,10 +133,14 @@ namespace ManualDeobfuscator
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("connectedClients"));
 
 
-			OnElement ("ConnectionManager.mapClientToEntity", mainModule.GetType ("ConnectionManager").Fields,
+			//moved to ClientInfo
+			/*OnElement ("ConnectionManager.mapClientToEntity", mainModule.GetType ("ConnectionManager").Fields,
 			          field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.Int32", "System.Int32"),
-			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("mapClientToEntity"));
+			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("mapClientToEntity"));*/
 
+			OnElement ("ConnectionManager.mapEntityToClients", mainModule.GetType ("ConnectionManager").Fields,
+				field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.Int32", "System.Collections.Generic.List"),
+				MakeFieldPublicAction, RenameAction<FieldDefinition> ("mapEntityToClients"));
 
 			// Console and ConsoleCommand
 			{
@@ -203,10 +185,11 @@ namespace ManualDeobfuscator
 
 
 					OnElement ("ConsoleSdtd.ExecuteCmdFromClient()", typeConsole.Methods,
-			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 3 &&
+			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 4 &&
 						HasType (method.Parameters [0].ParameterType, "UnityEngine.NetworkPlayer") &&
 						HasType (method.Parameters [1].ParameterType, "System.String") && 
 						HasType (method.Parameters [2].ParameterType, "System.String") && 
+						HasType (method.Parameters [3].ParameterType, "System.String") && 
 						HasType (method.ReturnType, "System.Void"),
 						RenameAction<MethodDefinition> ("ExecuteCmdFromClient")
 					);
@@ -230,9 +213,10 @@ namespace ManualDeobfuscator
 
 
 					OnElement ("ConsoleSdtd.ExecuteClientCmdInternal()", typeConsole.Methods,
-			          		method => !method.IsConstructor && method.IsPrivate && method.Parameters.Count == 2 &&
+			          		method => !method.IsConstructor && method.IsPrivate && method.Parameters.Count == 3 &&
 						HasType (method.Parameters [0].ParameterType, "System.String") &&
 						HasType (method.Parameters [1].ParameterType, "System.String") &&
+						HasType (method.Parameters [2].ParameterType, "System.String") &&
 						HasType (method.ReturnType, "System.Void"),
 					    MakeMethodPublicAction,
 						RenameAction<MethodDefinition> ("ExecuteClientCmdInternal")
