@@ -65,6 +65,10 @@ namespace ManualDeobfuscator
 				return true; };
 		}
 
+		public static Action<TypeDefinition> MakeTypePublicAction = def => {
+				def.Attributes = def.Attributes & (~Mono.Cecil.TypeAttributes.NestedPrivate) | Mono.Cecil.TypeAttributes.NestedPublic;
+				return true;
+			};
 		public static Action<FieldDefinition> MakeFieldPublicAction = def => {
 				def.Attributes = def.Attributes & (~Mono.Cecil.FieldAttributes.Private) | Mono.Cecil.FieldAttributes.Public;
 				return true;
