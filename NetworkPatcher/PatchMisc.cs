@@ -297,7 +297,7 @@ namespace NetworkPatcher
 
 			//---------------------------------Block--------------------------------
 			TypeDefinition blockBaseType = HelperClass.findType(module, false, 
-				HelperClass.MemberNameComparer<MethodDefinition>("IsPlant"), 
+				HelperClass.MemberNameComparer<FieldDefinition>("multiBlockPos"), 
 				HelperClass.MemberNameComparer<FieldDefinition> ("isMultiBlock"), 
 				HelperClass.MemberNameComparer<FieldDefinition> ("itemsToDrop"));
 			if (blockBaseType != null)
