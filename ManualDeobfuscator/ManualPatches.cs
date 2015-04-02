@@ -68,14 +68,14 @@ namespace ManualDeobfuscator
 				}
 			}
 
-			OnElement ("ConnectionManager.RemovePlayer()", mainModule.GetType ("ConnectionManager").Methods,
+			OnElement ("ConnectionManager.DisconnectClient()", mainModule.GetType ("ConnectionManager").Methods,
 			          method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 2 &&
-				HasType (method.Parameters [0].ParameterType, "System.Int32") && 
+				HasType (method.Parameters [0].ParameterType, "ClientInfo") && 
 				HasType (method.Parameters [1].ParameterType, "System.Boolean") &&
 				HasType (method.ReturnType, "System.Void"),
-			          RenameAction<MethodDefinition> ("RemovePlayer"));
+			          RenameAction<MethodDefinition> ("DisconnectClient"));
 
-			RenameAction<TypeDefinition> ("ItemBase") (mainModule.GetType ("ItemBlock").BaseType.Resolve ());
+			RenameAction<TypeDefinition> ("ItemBase") (mainModule.GetType ("ItemClassBlock").BaseType.Resolve ());
 
 
 			OnElement ("PersistentPlayerList.positionToLPBlockOwner", mainModule.GetType ("PersistentPlayerList").Fields,
@@ -98,11 +98,6 @@ namespace ManualDeobfuscator
 			);
 
 
-			OnElement ("AdminTools.commandPermissions", mainModule.GetType ("AdminTools").Fields,
-			          field => HasType (field.FieldType, "System.Collections.Generic.List") && HasGenericParams (field.FieldType, "AdminToolsCommandPermissions"),
-			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("commandPermissions"));
-
-
 			OnElement ("World.gameTime", mainModule.GetType ("World").Fields,
 			          field => HasType (field.FieldType, "System.UInt64"),
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("gameTime"));
@@ -116,16 +111,6 @@ namespace ManualDeobfuscator
 			OnElement ("World.LandClaimPower()", mainModule.GetType ("World").Methods,
 			          method => !method.IsConstructor && method.IsPrivate && method.Parameters.Count == 1 && HasType (method.Parameters [0].ParameterType, "PersistentPlayerData") && HasType (method.ReturnType, "System.Single"),
 			          MakeMethodPublicAction, RenameAction<MethodDefinition> ("LandClaimPower"));
-
-
-			OnElement ("GameManager.connectionManager", mainModule.GetType ("GameManager").Fields,
-			          field => HasType (field.FieldType, "ConnectionManager"),
-			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("connectionManager"));
-
-
-			OnElement ("ConnectionManager.gameManager", mainModule.GetType ("ConnectionManager").Fields,
-			          field => HasType (field.FieldType, "GameManager"),
-			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("gameManager"));
 
 
 			OnElement ("ConnectionManager.connectedClients", mainModule.GetType ("ConnectionManager").Fields,
@@ -155,21 +140,6 @@ namespace ManualDeobfuscator
 			          		RenameAction<FieldDefinition> ("console"));
 
 				
-					OnElement ("ConsoleSdtd.gameManager", typeConsole.Fields,
-			          		field => HasType (field.FieldType, "GameManager"),
-					        MakeFieldPublicAction, RenameAction<FieldDefinition> ("gameManager"));
-
-				
-					OnElement ("ConsoleSdtd.gameManager", typeConsole.Fields,
-			          		field => HasType (field.FieldType, "GameManager"),
-					        MakeFieldPublicAction, RenameAction<FieldDefinition> ("gameManager"));
-
-
-					OnElement ("ConsoleSdtd.issuerOfCurrentClientCommand", typeConsole.Fields,
-			          		field => HasType (field.FieldType, "UnityEngine.NetworkPlayer"),
-					        MakeFieldPublicAction, RenameAction<FieldDefinition> ("issuerOfCurrentClientCommand"));
-
-
 					OnElement ("ConsoleSdtd.telnetServer", typeConsole.Fields,
 			          		field => HasType (field.FieldType, "NetTelnetServer"),
 					        MakeFieldPublicAction, RenameAction<FieldDefinition> ("telnetServer"));
@@ -177,7 +147,7 @@ namespace ManualDeobfuscator
 
 					OnElement ("ConsoleSdtd.ExecuteCmdFromClient()", typeConsole.Methods,
 			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 4 &&
-						HasType (method.Parameters [0].ParameterType, "UnityEngine.NetworkPlayer") &&
+						HasType (method.Parameters [0].ParameterType, "System.Int32") &&
 						HasType (method.Parameters [1].ParameterType, "System.String") && 
 						HasType (method.Parameters [2].ParameterType, "System.String") && 
 						HasType (method.Parameters [3].ParameterType, "System.String") && 
@@ -200,17 +170,6 @@ namespace ManualDeobfuscator
 						method.Parameters [0].Name.Equals ("_line") &&
 						HasType (method.ReturnType, "System.Void"),
 						RenameAction<MethodDefinition> ("SendResult")
-					);
-
-
-					OnElement ("ConsoleSdtd.ExecuteClientCmdInternal()", typeConsole.Methods,
-			          		method => !method.IsConstructor && method.IsPrivate && method.Parameters.Count == 3 &&
-						HasType (method.Parameters [0].ParameterType, "System.String") &&
-						HasType (method.Parameters [1].ParameterType, "System.String") &&
-						HasType (method.Parameters [2].ParameterType, "System.String") &&
-						HasType (method.ReturnType, "System.Void"),
-					    MakeMethodPublicAction,
-						RenameAction<MethodDefinition> ("ExecuteClientCmdInternal")
 					);
 
 

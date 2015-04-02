@@ -289,15 +289,15 @@ namespace NetworkPatcher
 					null)*/
 			}, HelperClass.MemberNameSetter<MethodDefinition>("DenyPlayer"));
 
-			HelperClass.executeActions<MethodDefinition>(module, "GameManager", new HelperClass.GenericFuncContainer<MethodDefinition, bool>[]{
-				HelperClass.MethodParametersComparer("UnityEngine.NetworkViewID", "UnityEngine.NetworkPlayer", "System.String", "System.String", "System.String", "System.String"),
-				HelperClass.MethodReturnTypeComparer("System.Void"),
-				HelperClass.MethodAttributeComparer(MethodAttributes.Public)
-			}, HelperClass.MemberNameSetter<MethodDefinition>("AuthenticatePlayer"));
+//			HelperClass.executeActions<MethodDefinition>(module, "GameManager", new HelperClass.GenericFuncContainer<MethodDefinition, bool>[]{
+//				HelperClass.MethodParametersComparer("UnityEngine.NetworkViewID", "UnityEngine.NetworkPlayer", "System.String", "System.String", "System.String", "System.String"),
+//				HelperClass.MethodReturnTypeComparer("System.Void"),
+//				HelperClass.MethodAttributeComparer(MethodAttributes.Public)
+//			}, HelperClass.MemberNameSetter<MethodDefinition>("AuthenticatePlayer"));
 
 			//---------------------------------Block--------------------------------
 			TypeDefinition blockBaseType = HelperClass.findType(module, false, 
-				HelperClass.MemberNameComparer<MethodDefinition>("IsPlant"), 
+				HelperClass.MemberNameComparer<FieldDefinition>("PropIsPlant"), 
 				HelperClass.MemberNameComparer<FieldDefinition> ("isMultiBlock"), 
 				HelperClass.MemberNameComparer<FieldDefinition> ("itemsToDrop"));
 			if (blockBaseType != null)

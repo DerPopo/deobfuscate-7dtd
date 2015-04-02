@@ -56,9 +56,11 @@ namespace NetworkPatcher
 					continue;
 				}
 				if (mdef.IsStatic && mdef.ReturnType.Resolve ().Equals (packageClass) && mdef.Parameters.Count == 1) {
-					(packageTypeEnumDef = mdef.Parameters[0].ParameterType.Resolve()).Name = "PackageType";
-					mdef.Name = "CreatePackage";
-					continue;
+					if (string.IsNullOrEmpty(mdef.Parameters[0].ParameterType.Namespace)) {
+						(packageTypeEnumDef = mdef.Parameters[0].ParameterType.Resolve()).Name = "PackageType";
+						mdef.Name = "CreatePackage";
+						continue;
+					}
 				}
 			}
 			if (cctorMDef == null) {
@@ -71,6 +73,7 @@ namespace NetworkPatcher
 				return;
 			}
 			logger.Info("Found CreatePackage!");
+
 			bool curFound = false;
 			foreach (MethodDefinition mdef in packageClass.Methods) {
 				if (mdef.IsStatic && mdef.Parameters.Count == 1 && mdef.ReturnType.Resolve().Equals(packageTypeEnumDef) && mdef.Parameters[0].ParameterType.Resolve().FullName.Equals("System.IO.BinaryReader"))
@@ -85,8 +88,10 @@ namespace NetworkPatcher
 				logger.Warning("Cannot find ReadPackageType!");
 				error++;
 			}
+
 			logger.Info("Found ReadPackageType!");
 			PatchVirtualPackageMethods(packageClass, logger, true);
+
 			MethodBody cctorBody = cctorMDef.Body;
 			cctorBody.SimplifyMacros();
 			for (int i = 1; i < cctorBody.Instructions.Count; i++)
@@ -155,7 +160,9 @@ namespace NetworkPatcher
 				}
 			}
 			cctorBody.OptimizeMacros();
-			PatchPackageQueue.Patch(logger, asmCSharp);
+// PackageQueue is now based on an interface that's not obfuscated, only private stuff of the actual implementation is obfuscated
+//			PatchPackageQueue.Patch(logger, asmCSharp);
+
 			PatchMisc.Patch(logger, asmCSharp);
 			logger.Log(Logger.Level.KEYINFO, String.Format("Successful: {0} / Failed: {1}", success, error));
 		}
@@ -168,10 +175,10 @@ namespace NetworkPatcher
 			methodPatchedByName.Add("Write", false);
 			methodPatchedByName.Add("Process", false);
 			methodPatchedByName.Add("GetEstimatedPackageSize", false);
-			methodPatchedByName.Add("SetChannel", !isBaseClass);
+//			methodPatchedByName.Add("SetChannel", !isBaseClass);
 			methodPatchedByName.Add("GetFriendlyName", !isBaseClass);
 			foreach (MethodDefinition mdef in tdef.Methods) {
-				if (mdef.IsVirtual && mdef.Parameters.Count == 0 && mdef.ReturnType.Resolve().Equals(packageTypeEnumDef))
+				if (!mdef.IsGetter && mdef.IsVirtual && mdef.Parameters.Count == 0 && mdef.ReturnType.Resolve().Equals(packageTypeEnumDef))
 				{
 					mdef.Name = "GetPackageType";
 					logger.Info("Found " + mdef.FullName + "!");
@@ -179,15 +186,15 @@ namespace NetworkPatcher
 					success++;
 					continue;
 				}
-				if (mdef.IsVirtual && mdef.Parameters.Count == 1 && mdef.ReturnType.Resolve().FullName.Equals("System.Void") &&
-					mdef.Parameters[0].ParameterType.Resolve().FullName.Equals("System.Int32"))
-				{
-					mdef.Name = "SetChannel";
-					logger.Info("Found " + mdef.FullName + "!");
-					methodPatchedByName["SetChannel"] = true;
-					success++;
-					continue;
-				}
+//				if (mdef.IsVirtual && mdef.Parameters.Count == 1 && mdef.ReturnType.Resolve().FullName.Equals("System.Void") &&
+//					mdef.Parameters[0].ParameterType.Resolve().FullName.Equals("System.Int32"))
+//				{
+//					mdef.Name = "SetChannel";
+//					logger.Info("Found " + mdef.FullName + "!");
+//					methodPatchedByName["SetChannel"] = true;
+//					success++;
+//					continue;
+//				}
 				if (mdef.IsVirtual && mdef.Parameters.Count == 1 && mdef.ReturnType.Resolve().FullName.Equals("System.Void") &&
 					mdef.Parameters[0].ParameterType.Resolve().FullName.Equals("System.IO.BinaryReader"))
 				{
@@ -216,7 +223,7 @@ namespace NetworkPatcher
 					success++;
 					continue;
 				}
-				if (mdef.IsVirtual && mdef.Parameters.Count == 0 && mdef.ReturnType.Resolve().FullName.Equals("System.Int32"))
+				if (!mdef.IsGetter && mdef.IsVirtual && mdef.Parameters.Count == 0 && mdef.ReturnType.Resolve().FullName.Equals("System.Int32"))
 				{
 					mdef.Name = "GetEstimatedPackageSize";
 					logger.Info("Found " + mdef.FullName + "!");
@@ -224,7 +231,7 @@ namespace NetworkPatcher
 					success++;
 					continue;
 				}
-				if (mdef.IsVirtual && mdef.Parameters.Count == 0 && mdef.ReturnType.Resolve().FullName.Equals("System.String"))
+				if (!mdef.IsGetter && mdef.IsVirtual && mdef.Parameters.Count == 0 && mdef.ReturnType.Resolve().FullName.Equals("System.String"))
 				{
 					mdef.Name = "GetFriendlyName";
 					logger.Info("Found " + mdef.FullName + "!");

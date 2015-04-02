@@ -119,17 +119,17 @@ namespace NetworkPatcher
 
 			MethodDefinition setOwnerMethod = HelperClass.findMember<MethodDefinition>(module, tileEntityDef, false, true, 
 				HelperClass.MemberNameComparer<MethodDefinition>("SetOwner"), 
-				HelperClass.MethodOPCodeComparer(new int[]{ 2, 3, 4 }, new OpCode[] {OpCodes.Ldarg_0,OpCodes.Ldarg_1,OpCodes.Stfld}, null)
+				HelperClass.MethodOPCodeComparer(new int[]{ 0, 1, 2 }, new OpCode[] {OpCodes.Ldarg_0,OpCodes.Ldarg_1,OpCodes.Stfld}, null)
 			);
 			if (setOwnerMethod != null)
-				((FieldReference)setOwnerMethod.Body.Instructions[4].Operand).Resolve().Name = "owner";
+				((FieldReference)setOwnerMethod.Body.Instructions[2].Operand).Resolve().Name = "owner";
 
 			MethodDefinition setLockedMethod = HelperClass.findMember<MethodDefinition>(module, tileEntityDef, false, true, 
 				HelperClass.MemberNameComparer<MethodDefinition>("SetLocked"), 
-				HelperClass.MethodOPCodeComparer(new int[]{ 2, 3, 4 }, new OpCode[] {OpCodes.Ldarg_0,OpCodes.Ldarg_1,OpCodes.Stfld}, null)
+				HelperClass.MethodOPCodeComparer(new int[]{ 0, 1, 2 }, new OpCode[] {OpCodes.Ldarg_0,OpCodes.Ldarg_1,OpCodes.Stfld}, null)
 			);
 			if (setLockedMethod != null)
-				((FieldReference)setLockedMethod.Body.Instructions[4].Operand).Resolve().Name = "isLocked";
+				((FieldReference)setLockedMethod.Body.Instructions[2].Operand).Resolve().Name = "isLocked";
 
 			MethodDefinition hasPasswordMethod = HelperClass.findMember<MethodDefinition>(module, tileEntityDef, false, true, 
 				HelperClass.MemberNameComparer<MethodDefinition>("HasPassword"), 
