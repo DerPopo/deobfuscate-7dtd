@@ -304,7 +304,13 @@ namespace NetworkPatcher
 			if (blockBaseType != null)
 				blockBaseType.Name = "Block";
 
-
+			//-----------------------------ExplosionData----------------------------
+			MethodDefinition gmgrExplosionServer = HelperClass.findMember(module, "GameManager", false,
+				HelperClass.MemberNameComparer<MethodDefinition>("ExplosionServer"),
+				HelperClass.MethodParametersComparer("System.Int32", "UnityEngine.Vector3", "Vector3i", "UnityEngine.Quaternion", "", "System.Int32", "System.Single", "System.Boolean")
+			);
+			if (gmgrExplosionServer != null)
+				gmgrExplosionServer.Parameters[4].ParameterType.Resolve().Name = "ExplosionData";
 		}
 
 		private static string sdtd_decrypt(byte[] _data)
