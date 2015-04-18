@@ -98,6 +98,7 @@ namespace DeobfuscateMain
 
 		public static void Main (string[] args)
 		{
+			args = new string[]{ "P:\\Programme\\SteamLibrary\\steamapps\\common\\7 Days to Die Dedicated Server\\7DaysToDie_Data\\Managed\\Assembly-CSharp.o.dll" };
 			Console.WriteLine ("Assembly-CSharp Deobfuscator for 7 Days to Die [by the 7 Days to Die Modding Community]");
 
 			ownFolder = GetContainingFolder (Assembly.GetEntryAssembly ().Location);
@@ -253,10 +254,11 @@ namespace DeobfuscateMain
 				asmCSharpStream.Seek(0, SeekOrigin.Begin);
 				csharpDef = AssemblyDefinition.ReadAssembly(asmCSharpStream, new ReaderParameters{ AssemblyResolver = resolver });
 				asmCSharpStream.Close();
+				csharpModule = csharpDef.Modules[0];
 			}
 			mainLogger.Write(); mainLogger.Write("___");
 
-			if (mscorlibDef != null && mscorlibDef.Modules.Count > 0)
+			if ((mscorlibDef != null) && (mscorlibDef.Modules.Count > 0))
 			{
 				csharpModule.Types.Add(new TypeDefinition("", "Deobfuscated", 
 					Mono.Cecil.TypeAttributes.AutoLayout | Mono.Cecil. TypeAttributes.Public | 
