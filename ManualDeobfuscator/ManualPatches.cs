@@ -45,29 +45,6 @@ namespace ManualDeobfuscator
 			}
 			);
 
-			// Rename method which generates map colors
-			{
-				MethodDefinition mapColors = Find ("Chunk.GetMapColors()", mainModule.GetType ("Chunk").Methods, method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
-					method.Name.Equals ("GetMapColors")
-				);
-				if (mapColors != null) {
-					MethodBody body = mapColors.Body;
-					body.SimplifyMacros ();
-					for (int i = 1; i < body.Instructions.Count; i++) {
-						Instruction curInstr = body.Instructions [i];
-						if (curInstr.OpCode == OpCodes.Call) {
-							if (curInstr.Operand is MethodDefinition) {
-								MethodDefinition md = (MethodDefinition)curInstr.Operand;
-								RenameAction<MethodDefinition> ("CalcMapColors") (md);
-								MakeMethodPublicAction (md);
-							} else
-								logger.Warning (" (Chunk.GetMapColors()): A Call instruction has no MethodDefinition operand!");
-						}
-					}
-					body.OptimizeMacros ();
-				}
-			}
-
 			OnElement ("ConnectionManager.DisconnectClient()", mainModule.GetType ("ConnectionManager").Methods,
 			          method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 2 &&
 				HasType (method.Parameters [0].ParameterType, "ClientInfo") && 
@@ -117,6 +94,7 @@ namespace ManualDeobfuscator
 			          field => HasType (field.FieldType, "DictionarySave") && HasGenericParams (field.FieldType, "System.Int32", "ClientInfo"),
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("connectedClients"));
 
+<<<<<<< HEAD
 
 			// Console and ConsoleCommand
 			{
@@ -218,6 +196,8 @@ namespace ManualDeobfuscator
 						RenameAction<MethodDefinition> ("Description")
 			);
 
+=======
+>>>>>>> e6b6e2433c2347b5a301839b828aeaf69e6927c9
 		}
 
 	}
