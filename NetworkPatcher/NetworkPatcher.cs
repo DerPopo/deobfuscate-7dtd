@@ -149,7 +149,6 @@ namespace NetworkPatcher
 							}
 							else
 								curPackageClass.Name = "NetPackage_" + enumField.Name;
-							PatchVirtualPackageMethods(curPackageClass.Resolve(), logger, false);
 							logger.Info("Renamed packet class (" + curPackageClass.FullName + ")!");
 						}
 						else
@@ -160,6 +159,8 @@ namespace NetworkPatcher
 				}
 			}
 			cctorBody.OptimizeMacros();
+			foreach (TypeDefinition packageType in HelperClass.findTypes(asmCSharp.Modules[0], HelperClass.BaseTypeComparer(packageClass)))
+				PatchVirtualPackageMethods(packageType, logger, packageType.Equals(packageClass));
 // PackageQueue is now based on an interface that's not obfuscated, only private stuff of the actual implementation is obfuscated
 //			PatchPackageQueue.Patch(logger, asmCSharp);
 

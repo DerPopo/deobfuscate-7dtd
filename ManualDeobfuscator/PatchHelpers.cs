@@ -53,6 +53,23 @@ namespace ManualDeobfuscator
 			}
 			return true;
 		}
+		public static bool HasGenericParams (TypeReference tr, params TypeReference[] paramNames)
+		{
+			if (!tr.IsGenericInstance)
+				return false;
+
+			GenericInstanceType genType = (GenericInstanceType)tr;
+			if (genType.GenericArguments.Count != paramNames.Length)
+				return false;
+
+			for (int i = 0; i < paramNames.Length; i++) {
+				TypeReference genRef = genType.GenericArguments [i];
+				if (!genRef.FullName.Equals(paramNames[i].FullName))
+					return false;
+			}
+			return true;
+		}
+
 
 
 

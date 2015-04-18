@@ -121,7 +121,9 @@ namespace ManualDeobfuscator
 			// Console and ConsoleCommand
 			{
 				TypeDefinition typeConsole = null;
+				TypeDefinition typeSdtdConsole = mainModule.GetType ("SdtdConsole");
 				TypeDefinition typeConsoleCommand = null;
+				TypeDefinition typeQueuedCommand = null;
 
 				OnElement ("NetTelnetServer.SetConsole()", mainModule.GetType ("NetTelnetServer").Methods,
 			          		method => !method.IsConstructor && method.Name.Equals ("SetConsole") && method.IsPublic && method.Parameters.Count == 1 && HasType (method.ReturnType, "System.Void"),
@@ -134,35 +136,9 @@ namespace ManualDeobfuscator
 				if (typeConsole != null) {
 					RenameAction<TypeDefinition> ("ConsoleSdtd") (typeConsole);
 
-
 					OnElement ("NetTelnetServer.console", mainModule.GetType ("NetTelnetServer").Fields,
 			          		field => HasType (field.FieldType, typeConsole.Name),
 			          		RenameAction<FieldDefinition> ("console"));
-
-				
-					OnElement ("ConsoleSdtd.telnetServer", typeConsole.Fields,
-			          		field => HasType (field.FieldType, "NetTelnetServer"),
-					        MakeFieldPublicAction, RenameAction<FieldDefinition> ("telnetServer"));
-
-
-					OnElement ("ConsoleSdtd.ExecuteCmdFromClient()", typeConsole.Methods,
-			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 4 &&
-						HasType (method.Parameters [0].ParameterType, "System.Int32") &&
-						HasType (method.Parameters [1].ParameterType, "System.String") && 
-						HasType (method.Parameters [2].ParameterType, "System.String") && 
-						HasType (method.Parameters [3].ParameterType, "System.String") && 
-						HasType (method.ReturnType, "System.Void"),
-						RenameAction<MethodDefinition> ("ExecuteCmdFromClient")
-					);
-
-
-					OnElement ("ConsoleSdtd.Run()", typeConsole.Methods,
-			          		method => !method.IsConstructor && method.IsPublic && method.IsVirtual && method.Parameters.Count == 0 &&
-						HasType (method.ReturnType, "System.Void") &&
-						method.Body.CodeSize > 20,
-						RenameAction<MethodDefinition> ("Run")
-					);
-
 
 					OnElement ("ConsoleSdtd.SendResult()", typeConsole.Methods,
 			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 1 &&
@@ -172,95 +148,37 @@ namespace ManualDeobfuscator
 						RenameAction<MethodDefinition> ("SendResult")
 					);
 
-
-					OnElement ("ConsoleSdtd.ExecuteRemoteCmdInternal()", typeConsole.Methods,
-			          		method => !method.IsConstructor && method.IsPrivate && method.Parameters.Count == 2 &&
-						HasType (method.Parameters [0].ParameterType, "System.String") &&
-						HasType (method.Parameters [1].ParameterType, "System.Boolean") &&
-						HasType (method.ReturnType, "System.Void"),
-					    MakeMethodPublicAction,
-						RenameAction<MethodDefinition> ("ExecuteRemoteCmdInternal")
+					OnElement ("SdtdConsole.executeCommand()", typeSdtdConsole.Methods,
+						method => !method.IsConstructor && !method.IsPublic && method.Parameters.Count == 2 &&
+						method.Name.Equals ("executeCommand"),
+						MakeMethodPublicAction
 					);
+					OnElement ("SdtdConsole.commands", typeSdtdConsole.Fields,
+						field => HasType (field.FieldType, "System.Collections.Generic.SortedList") && HasGenericParams (field.FieldType, "System.String", "IConsoleCommand"),
+						MakeFieldPublicAction, RenameAction<FieldDefinition> ("commands"));
+					OnElement ("SdtdConsole.servers", typeSdtdConsole.Fields,
+						field => HasType (field.FieldType, "System.Collections.Generic.List") && HasGenericParams (field.FieldType, "IConsoleServer"),
+						MakeFieldPublicAction, RenameAction<FieldDefinition> ("servers"));
 
-
-					OnElement ("ConsoleSdtd.getCommand()", typeConsole.Methods,
-			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 1 &&
-						HasType (method.Parameters [0].ParameterType, "System.String") && method.Parameters [0].Name.Equals ("_command") &&
-						method.ReturnType.Namespace.Length == 0,
-					        method => {
-						typeConsoleCommand = method.ReturnType.Resolve ();
-						return true; },
-						RenameAction<MethodDefinition> ("getCommand")
-					);
-
-
-					if (typeConsoleCommand != null) {
-						OnElement ("ConsoleSdtd.AddCommand()", typeConsole.Methods,
-			          		method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 1 &&
-							HasType (method.Parameters [0].ParameterType, typeConsoleCommand.Name) &&
-							HasType (method.ReturnType, "System.Void"),
-						RenameAction<MethodDefinition> ("AddCommand")
-						);
-
-
-						OnElement ("ConsoleSdtd.commands", typeConsole.Fields,
-				          		field => HasType (field.FieldType, "System.Collections.Generic.List") && HasGenericParams (field.FieldType, typeConsoleCommand.Name),
-						        MakeFieldPublicAction, RenameAction<FieldDefinition> ("commands"));
+					OnElement ("SdtdConsole::QueuedCommand", typeSdtdConsole.NestedTypes,
+						type => {
+							if (Find("SdtdConsole::QueuedCommand.command", type.Fields, field => field.Name.Equals("command")) != null &&
+								Find("SdtdConsole::QueuedCommand.sender", type.Fields, field => field.Name.Equals("sender")) != null)
+							{
+								typeQueuedCommand = type;
+								return true;
+							}
+							return false;
+						},
+						MakeTypePublicAction, RenameAction<TypeDefinition> ("QueuedCommand"));
+					if (typeQueuedCommand != null)
+					{
+						OnElement ("SdtdConsole.asyncCommands", typeSdtdConsole.Fields,
+							field => HasType (field.FieldType, "System.Collections.Generic.List") && HasGenericParams (field.FieldType, typeQueuedCommand),
+							MakeFieldPublicAction, RenameAction<FieldDefinition> ("asyncCommands"));
 					}
-
 				}
 				// END Console
-
-				// Commands
-				if (typeConsoleCommand != null) {
-					RenameAction<TypeDefinition> ("ConsoleCommand") (typeConsoleCommand);
-					PatchConsoleCommandMethods (typeConsoleCommand, typeConsole, "ConsoleCommand");
-
-					// Individual command classes
-					foreach (TypeDefinition td in mainModule.Types) {
-						if (td.BaseType != null && td.BaseType.Name.Equals (typeConsoleCommand.Name)) {
-							string commandName = string.Empty;
-							MethodDefinition namesMethod = Find ("Command.Names()", td.Methods, method => !method.IsConstructor && method.IsPublic && method.Parameters.Count == 0 &&
-								HasType (method.ReturnType, "System.String[]")
-							);
-							if (namesMethod != null) {
-								MethodBody body = namesMethod.Body;
-								body.SimplifyMacros ();
-								for (int i = 1; i < body.Instructions.Count; i++) {
-									Instruction curInstr = body.Instructions [i];
-									if (curInstr.OpCode == OpCodes.Ldstr) {
-										if (curInstr.Operand is string) {
-											string curName = (string)curInstr.Operand;
-											if (curName.Length > commandName.Length) {
-												commandName = curName;
-											}
-										} else
-											logger.Warning ("A Ldstr instruction has no string operand!");
-									}
-								}
-								if (commandName.Length > 0)
-									RenameAction<TypeDefinition> ("Command_" + commandName) (td);
-								else
-									logger.Warning ("No name for command found");
-
-								body.OptimizeMacros ();
-							} else {
-								logger.Warning ("No Names() method for command found");
-							}
-							PatchConsoleCommandMethods (td, typeConsole, commandName.Length > 0 ? "Command_" + commandName : "UnknownCommand");
-
-							foreach (TypeDefinition td2 in mainModule.Types) {
-								if (td2.BaseType != null && td2.BaseType.Name.Equals (td.Name)) {
-									logger.Info ("Base for: " + clnamestomod [td] + " - " + td2.Name);
-								}
-							}
-
-						}
-					}
-					// END Individual command classes
-				}
-				// END Commands
-
 			}
 			// END Console and ConsoleCommand
 
