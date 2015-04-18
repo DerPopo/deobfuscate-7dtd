@@ -173,10 +173,16 @@ namespace DeobfuscateMain
 			resolver.AddSearchDirectory (acsharpSource.path);
 
 			AssemblyDefinition csharpDef = null;
+			AssemblyDefinition mscorlibDef = null;
 			try {
 				csharpDef = AssemblyDefinition.ReadAssembly (args [0], new ReaderParameters{ AssemblyResolver = resolver });
 			} catch (Exception e) {
 				ErrorExit("Unable to load Assembly-CSharp.dll :" + e.ToString ());
+			}
+			try {
+				mscorlibDef = AssemblyDefinition.ReadAssembly(acsharpSource.path + Path.DirectorySeparatorChar + "mscorlib.dll", new ReaderParameters{ AssemblyResolver = resolver });
+			} catch (Exception e) {
+				mainLogger.Warning("Unable to load mscorlib.dll :" + e.ToString());
 			}
 			int csharpFileLen = (int)new FileInfo(args[0]).Length;
 
@@ -184,7 +190,8 @@ namespace DeobfuscateMain
 			{
 				ErrorExit("Assembly-CSharp.dll is invalid!");
 			}
-			if (csharpDef.Modules[0].GetType("Deobfuscated") != null)
+			ModuleDefinition csharpModule = csharpDef.Modules[0];
+			if (csharpModule.GetType("Deobfuscated") != null)
 			{
 				ErrorExit("Assembly-CSharp already is deobfuscated!");
 			}
@@ -249,9 +256,14 @@ namespace DeobfuscateMain
 			}
 			mainLogger.Write(); mainLogger.Write("___");
 
-			csharpDef.Modules[0].Types.Add(new TypeDefinition("", "Deobfuscated", 
-				Mono.Cecil.TypeAttributes.AutoLayout | Mono.Cecil. TypeAttributes.Public | 
-					Mono.Cecil.TypeAttributes.AnsiClass | Mono.Cecil.TypeAttributes.BeforeFieldInit));
+			if (mscorlibDef != null && mscorlibDef.Modules.Count > 0)
+			{
+				csharpModule.Types.Add(new TypeDefinition("", "Deobfuscated", 
+					Mono.Cecil.TypeAttributes.AutoLayout | Mono.Cecil. TypeAttributes.Public | 
+					Mono.Cecil.TypeAttributes.AnsiClass | Mono.Cecil.TypeAttributes.BeforeFieldInit, csharpModule.Import(mscorlibDef.Modules[0].GetType("System.Object"))));
+			}
+			else
+				mainLogger.Error("Unable to create the Deobufscated class!");
 
 			string outputPath = acsharpSource.path + Path.DirectorySeparatorChar + "Assembly-CSharp.deobf.dll";
 			mainLogger.KeyInfo ("Saving the new assembly to " + outputPath + " ...");

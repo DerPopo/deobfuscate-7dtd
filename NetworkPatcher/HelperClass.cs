@@ -1,9 +1,9 @@
 ﻿using System;
-using DeobfuscateMain;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using System.Collections.Generic;
 using System.Reflection;
+using System.Collections.Generic;
+using DeobfuscateMain;
 
 namespace NetworkPatcher
 {
@@ -35,15 +35,41 @@ namespace NetworkPatcher
 				return false;
 			});
 		}
-		public static GenericFuncContainer<TypeDefinition,bool> BaseTypeComparer(TypeDefinition baseType)
+		public static GenericFuncContainer<TypeDefinition,bool> BaseInterfaceComparer(TypeDefinition baseType)
 		{
 			return new GenericFuncContainer<TypeDefinition,bool>(type => {
 				TypeDefinition curBaseType = type;
-				while (curBaseType != null && curBaseType.BaseType != null)
+				while (curBaseType != null)
+				{
+					foreach (TypeReference curInterfaceRef in curBaseType.Interfaces)
+					{
+						TypeDefinition interfaceDef = curInterfaceRef.Resolve();
+						if (interfaceDef == null)
+							continue;
+						if (interfaceDef.Equals(baseType))
+							return true;
+					}
+					TypeReference nextBaseType = curBaseType.BaseType;
+					if (nextBaseType == null)
+						break;
+					curBaseType = nextBaseType.Resolve();
+				}
+				return false;
+			});
+		}
+		public static GenericFuncContainer<TypeDefinition,bool> BaseTypeComparer(TypeDefinition baseType)
+		{
+			//logger.KeyInfo("baseType = " + baseType.FullName);
+			return new GenericFuncContainer<TypeDefinition,bool>(type => {
+				TypeDefinition curBaseType = type;
+				while (curBaseType != null)
 				{
 					if (curBaseType.Equals(baseType))
 						return true;
-					curBaseType = curBaseType.BaseType.Resolve();
+					TypeReference nextBaseType = curBaseType.BaseType;
+					if (nextBaseType == null)
+						break;
+					curBaseType = nextBaseType.Resolve();
 				}
 				return false;
 			});
@@ -143,6 +169,39 @@ namespace NetworkPatcher
 					return false;
 				}
 				return curReturnType.Equals(returnType);
+			});
+		}
+		public static GenericFuncContainer<MethodDefinition,bool> MethodParametersComparerEx(params string[] parameterTypes)
+		{
+			return new GenericFuncContainer<MethodDefinition,bool> (method => {
+				if (method.Parameters.Count != parameterTypes.Length)
+					return false;
+				for (int i = 0; i < method.Parameters.Count; i++)
+				{
+					if (parameterTypes[i].Length == 0)
+						continue;
+					TypeReference curParTref = method.Parameters[i].ParameterType;
+					TypeDefinition curParTdef = curParTref.Resolve();
+					if (curParTdef == null)
+						throw new Exception("Unable to resolve the type '" + curParTref.FullName + "'!");
+					System.Text.StringBuilder typeNameBuilder = new System.Text.StringBuilder ();
+					typeNameBuilder.Append (curParTdef.FullName);
+					if ((curParTdef.GenericParameters.Count > 0) && (curParTref is GenericInstanceType))
+					{
+						typeNameBuilder.Remove (typeNameBuilder.Length - 2, 2);
+						typeNameBuilder.Append ('<');
+						foreach (TypeReference garg in ((GenericInstanceType)curParTref).GenericArguments)
+						{
+							typeNameBuilder.Append (writeGenericArgument (garg));
+						}
+						typeNameBuilder [typeNameBuilder.Length - 1] = '>';
+						if (curParTref.IsArray)
+							typeNameBuilder.Append("[]");
+					}
+					if (!typeNameBuilder.ToString().Equals(parameterTypes[i]))
+						return false;
+				}
+				return true;
 			});
 		}
 		public static GenericFuncContainer<MethodDefinition,bool> MethodParametersComparer(params string[] parameterTypes)
@@ -357,6 +416,7 @@ namespace NetworkPatcher
 
 			foreach (TypeDefinition type in module.Types)
 			{
+				compareMember<TypeDefinition>(type, comparersApply);
 				foreach (MethodDefinition method in type.Methods)
 					compareMember<MethodDefinition>(method, comparersApply);
 				foreach (FieldDefinition field in type.Fields)

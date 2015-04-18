@@ -94,6 +94,47 @@ namespace ManualDeobfuscator
 			          field => HasType (field.FieldType, "DictionarySave") && HasGenericParams (field.FieldType, "System.Int32", "ClientInfo"),
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("connectedClients"));
 
+			// Console and ConsoleCommand
+			{
+				TypeDefinition typeSdtdConsole = mainModule.GetType ("SdtdConsole");
+				TypeDefinition typeQueuedCommand = null;
+
+				// Console
+				if (typeSdtdConsole != null) {
+					OnElement ("SdtdConsole.executeCommand()", typeSdtdConsole.Methods,
+						method => !method.IsConstructor && !method.IsPublic && method.Parameters.Count == 2 &&
+						method.Name.Equals ("executeCommand"),
+						MakeMethodPublicAction
+					);
+					OnElement ("SdtdConsole.commands", typeSdtdConsole.Fields,
+						field => HasType (field.FieldType, "System.Collections.Generic.SortedList") && HasGenericParams (field.FieldType, "System.String", "IConsoleCommand"),
+						MakeFieldPublicAction, RenameAction<FieldDefinition> ("commands"));
+					OnElement ("SdtdConsole.servers", typeSdtdConsole.Fields,
+						field => HasType (field.FieldType, "System.Collections.Generic.List") && HasGenericParams (field.FieldType, "IConsoleServer"),
+						MakeFieldPublicAction, RenameAction<FieldDefinition> ("servers"));
+
+					OnElement ("SdtdConsole::QueuedCommand", typeSdtdConsole.NestedTypes,
+						type => {
+							if (Find("SdtdConsole::QueuedCommand.command", type.Fields, field => field.Name.Equals("command")) != null &&
+								Find("SdtdConsole::QueuedCommand.sender", type.Fields, field => field.Name.Equals("sender")) != null)
+							{
+								typeQueuedCommand = type;
+								return true;
+							}
+							return false;
+						},
+						MakeTypePublicAction, RenameAction<TypeDefinition> ("QueuedCommand"));
+					if (typeQueuedCommand != null)
+					{
+						OnElement ("SdtdConsole.asyncCommands", typeSdtdConsole.Fields,
+							field => HasType (field.FieldType, "System.Collections.Generic.List") && HasGenericParams (field.FieldType, typeQueuedCommand),
+							MakeFieldPublicAction, RenameAction<FieldDefinition> ("asyncCommands"));
+					}
+				}
+				// END Console
+			}
+			// END Console and ConsoleCommand
+
 		}
 
 	}
