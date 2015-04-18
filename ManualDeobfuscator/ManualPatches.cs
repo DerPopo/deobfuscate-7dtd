@@ -94,8 +94,6 @@ namespace ManualDeobfuscator
 			          field => HasType (field.FieldType, "DictionarySave") && HasGenericParams (field.FieldType, "System.Int32", "ClientInfo"),
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("connectedClients"));
 
-<<<<<<< HEAD
-
 			// Console and ConsoleCommand
 			{
 				TypeDefinition typeConsole = null;
@@ -195,9 +193,6 @@ namespace ManualDeobfuscator
 				HasType (method.ReturnType, "System.String"),
 						RenameAction<MethodDefinition> ("Description")
 			);
-
-=======
->>>>>>> e6b6e2433c2347b5a301839b828aeaf69e6927c9
 		}
 
 	}
