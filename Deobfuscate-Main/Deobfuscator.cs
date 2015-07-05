@@ -7,9 +7,10 @@ using Mono.Cecil;
 
 namespace DeobfuscateMain
 {
-	class Deobfuscator
+	public class Deobfuscator
 	{
 		private static AssemblyPath ownFolder;
+		public static AssemblyPath sourceAssemblyPath;
 		private static Logger mainLogger = null;
 
 		class PatcherAssembly
@@ -33,7 +34,7 @@ namespace DeobfuscateMain
 			}
 		}
 
-		class AssemblyPath
+		public class AssemblyPath
 		{
 			public string path;
 			public string filename;
@@ -67,10 +68,10 @@ namespace DeobfuscateMain
 
 		public static Assembly LoadPublicAssembly (object sender, ResolveEventArgs args)
 		{
-			string path = ownFolder.path + Path.PathSeparator + args.Name;
+			string path = ownFolder.path + Path.DirectorySeparatorChar + args.Name;
 			if (!File.Exists (path))
 			{
-				path = ownFolder.path + Path.PathSeparator + "patchers" + Path.PathSeparator + args.Name;
+				path = ownFolder.path + Path.DirectorySeparatorChar + "patchers" + Path.DirectorySeparatorChar + args.Name;
 				if (!File.Exists (path))
 					return null;
 			}
@@ -98,6 +99,7 @@ namespace DeobfuscateMain
 
 		public static void Main (string[] args)
 		{
+			args = new string[] { "E:\\Programme\\SteamLibrary\\SteamApps\\common\\7 Days To Die\\7DaysToDie_Data\\Managed\\Assembly-CSharp.o.dll" };
 			Console.WriteLine ("Assembly-CSharp Deobfuscator for 7 Days to Die [by the 7 Days to Die Modding Community]");
 
 			ownFolder = GetContainingFolder (Assembly.GetEntryAssembly ().Location);
@@ -142,6 +144,7 @@ namespace DeobfuscateMain
 			if (!File.Exists (acsharpSource.path + Path.DirectorySeparatorChar + acsharpSource.filename)) {
 				ErrorExit("Unable to retrieve the folder containing Assembly-CSharp.dll!");
 			}
+			sourceAssemblyPath = acsharpSource;
 
 			string patchersPath = ownFolder.path + Path.DirectorySeparatorChar + "patchers";
 			if (!Directory.Exists (patchersPath)) {

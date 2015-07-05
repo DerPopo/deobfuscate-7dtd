@@ -16,8 +16,10 @@ namespace NamePatcher
 			return new string[]{ "DerPopo" };
 		}
 
+		internal static ModuleDefinition module;
 		public static void Patch(Logger logger, AssemblyDefinition asmCSharp, AssemblyDefinition __reserved)
 		{
+			module = asmCSharp.Modules[0];
 			foreach (ModuleDefinition mdef in asmCSharp.Modules)
 			{
 				logger.KeyInfo("Patching " + mdef.Types.Count + " type[s] ...");

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
+using Mono.Cecil.Rocks;
 
 namespace NamePatcher
 {
@@ -134,97 +136,108 @@ namespace NamePatcher
             if (typeof(T) == typeof(MethodDefinition))
             {
                 MethodDefinition mdef = def as MethodDefinition;
-                Mono.Collections.Generic.Collection<ParameterDefinition> pardef = mdef.Parameters;
-                if (pardef == null) { pardef = new Mono.Collections.Generic.Collection<ParameterDefinition>(); }
+				if (mdef.DeclaringType.GenericParameters.Count != 0 || mdef.GenericParameters.Count != 0)
+					needsNewName = false;
+				else
+				{
+	                Mono.Collections.Generic.Collection<ParameterDefinition> pardef = mdef.Parameters;
+	                if (pardef == null) { pardef = new Mono.Collections.Generic.Collection<ParameterDefinition>(); }
 
-                int parid = 1;
-				if (mdef.IsVirtual && needsNewName)
-                {
-                    prefix = "mdv";
-                    List<MethodDefinition> baseVmdefList = new List<MethodDefinition>();
-                    baseVmdefList.Add(mdef);
-                    TypeDefinition baseclass = null;
-                    try
-                    {
-                        TypeReference curBaseType = btdef.BaseType;
-                        while (curBaseType != null)
-                        {
-                            TypeDefinition basetdef = curBaseType.Resolve();
-                            if (basetdef == null)
-                                break;
-                            if (basetdef.HasMethods && basetdef.Methods != null)
-                            {
-                                foreach (MethodDefinition basemdef in basetdef.Methods)
-                                {
-                                    if (basemdef == null)
-                                        continue;
-                                    Mono.Collections.Generic.Collection<ParameterDefinition> basepardef = basemdef.Parameters;
-                                    if (basepardef == null) { basepardef = new Mono.Collections.Generic.Collection<ParameterDefinition>(); }
-                                    try
-                                    {
-                                        if (basemdef.Name != null && mdef.Name != null && basemdef.Name.Equals(mdef.Name) && basemdef.IsVirtual && paramlistEquals(basepardef, pardef))
-                                        {
-                                            baseVmdefList.Add(basemdef);
-                                            baseclass = basetdef;
-                                        }
-                                    }
-                                    catch (Exception) { /*throw new Exception("2.1");*/ }
-                                }
-                            }
-                            curBaseType = basetdef.BaseType;
-                        }
+	                int parid = 1;
+					if (mdef.IsVirtual && needsNewName)
+	                {
+	                    prefix = "mdv";
+	                    List<MethodDefinition> baseVmdefList = new List<MethodDefinition>();
+	                    baseVmdefList.Add(mdef);
+	                    TypeDefinition baseclass = null;
+	                    try
+	                    {
+	                        TypeReference curBaseType = btdef.BaseType;
+	                        while (curBaseType != null)
+	                        {
+	                            TypeDefinition basetdef = curBaseType.Resolve();
+	                            if (basetdef == null)
+	                                break;
+	                            if (basetdef.HasMethods && basetdef.Methods != null)
+	                            {
+	                                foreach (MethodDefinition basemdef in basetdef.Methods)
+	                                {
+	                                    if (basemdef == null)
+	                                        continue;
+	                                    Mono.Collections.Generic.Collection<ParameterDefinition> basepardef = basemdef.Parameters;
+	                                    if (basepardef == null) { basepardef = new Mono.Collections.Generic.Collection<ParameterDefinition>(); }
+	                                    try
+	                                    {
+	                                        if (basemdef.Name != null && mdef.Name != null && basemdef.Name.Equals(mdef.Name) && basemdef.IsVirtual && paramlistEquals(basepardef, pardef))
+	                                        {
+	                                            baseVmdefList.Add(basemdef);
+	                                            baseclass = basetdef;
+	                                        }
+	                                    }
+	                                    catch (Exception) { /*throw new Exception("2.1");*/ }
+	                                }
+	                            }
+	                            curBaseType = basetdef.BaseType;
+	                        }
 
-                    }
-                    catch (NotSupportedException) { }
-                    if (baseclass != null)
-                    {
-                        vmdGroupInfo vmGroup = null;
-                        foreach (vmdGroupInfo curGroupInfo in vclasses)
-                        {
-                            if (curGroupInfo.applyingmdefs.Count < 1)
-                                continue;
-                            if (curGroupInfo.applyingmdefs.ToArray()[0].Name.Equals(mdef.Name)
-                                && curGroupInfo.baseclass.Name.Equals(baseclass.Name))
-                            {
-                                vmGroup = curGroupInfo;
-                                break;
-                            }
-                        }
-                        if (vmGroup == null)
-                        {
-                            vmGroup = new vmdGroupInfo(String.Format("{0}{1:x4}", prefix, vmethid), baseclass);
-                            vclasses.Add(vmGroup);
-                            ++vmethid;
-                        }
-                        int oldgrouplen = vmGroup.applyingmdefs.Count;
-                        object[] baseVmdefs = baseVmdefList.ToArray();
-                        for (int i = baseVmdefs.Length - 1; i >= 0; i--)
-                        {
-                            MethodDefinition curBaseDef = baseVmdefs[i] as MethodDefinition;
-                            foreach (MethodDefinition curSubDef in vmGroup.applyingmdefs)
-                            {
-                                if ((curBaseDef.DeclaringType == curSubDef.DeclaringType) && paramlistEquals(curSubDef.Parameters, mdef.Parameters))
-                                {
-                                    curBaseDef = null;
-                                    break;
-                                }
-                            }
-                            if (curBaseDef != null)
-                                vmGroup.applyingmdefs.Add(curBaseDef);
-                        }
-						needsNewName = false;
-                    }
-                }
-                if (mdef.HasParameters)
-                {
-                    foreach (ParameterDefinition pdef in mdef.Parameters)
-                    {
-						if (nameIsObfuscated(pdef.Name))
-                            pdef.Name = String.Format("par{0:x4}", parid);
-                        ++parid;
-                    }
-                }
+	                    }
+	                    catch (NotSupportedException) { }
+	                    if (baseclass != null)
+	                    {
+	                        vmdGroupInfo vmGroup = null;
+	                        foreach (vmdGroupInfo curGroupInfo in vclasses)
+	                        {
+	                            if (curGroupInfo.applyingmdefs.Count < 1)
+	                                continue;
+	                            if (curGroupInfo.applyingmdefs.ToArray()[0].Name.Equals(mdef.Name)
+	                                && curGroupInfo.baseclass.Name.Equals(baseclass.Name))
+	                            {
+	                                vmGroup = curGroupInfo;
+	                                break;
+	                            }
+	                        }
+	                        if (vmGroup == null)
+	                        {
+	                            vmGroup = new vmdGroupInfo(String.Format("{0}{1:x4}", prefix, vmethid), baseclass);
+	                            vclasses.Add(vmGroup);
+	                            ++vmethid;
+	                        }
+	                        int oldgrouplen = vmGroup.applyingmdefs.Count;
+	                        object[] baseVmdefs = baseVmdefList.ToArray();
+	                        for (int i = baseVmdefs.Length - 1; i >= 0; i--)
+	                        {
+	                            MethodDefinition curBaseDef = baseVmdefs[i] as MethodDefinition;
+	                            foreach (MethodDefinition curSubDef in vmGroup.applyingmdefs)
+	                            {
+	                                if ((curBaseDef.DeclaringType == curSubDef.DeclaringType) && paramlistEquals(curSubDef.Parameters, mdef.Parameters))
+	                                {
+	                                    curBaseDef = null;
+	                                    break;
+	                                }
+	                            }
+	                            if (curBaseDef != null)
+	                                vmGroup.applyingmdefs.Add(curBaseDef);
+	                        }
+							needsNewName = false;
+	                    }
+	                }
+	                if (mdef.HasParameters)
+	                {
+	                    foreach (ParameterDefinition pdef in mdef.Parameters)
+	                    {
+							if (nameIsObfuscated(pdef.Name))
+	                            pdef.Name = String.Format("par{0:x4}", parid);
+	                        ++parid;
+	                    }
+	                }
+				}
             }
+			else if (typeof(T) == typeof(FieldDefinition))
+			{
+				FieldDefinition fdef = def as FieldDefinition;
+				if (fdef.DeclaringType.GenericParameters.Count != 0)
+					needsNewName = false;
+			}
             //newName = (newName == null ? null : String.Format("{0}{1:x4}", prefix, cmid));
             //if (newName != null)
 			if (needsNewName)
@@ -287,6 +300,7 @@ namespace NamePatcher
 				return true;
 			if (origName[0] >= '0' && origName[0] <= '9')
 				return true;
+			bool hasOnlyUppercaseLetters = true;
 			bool ret = (origName.Length == 5);
 			foreach (char ch in origName)
 			{
@@ -300,12 +314,16 @@ namespace NamePatcher
 				{
 					return true;
 				}
+				if (!(ch >= 'A' && ch <= 'Z'))
+				{
+					hasOnlyUppercaseLetters = false;
+				}
 				if (!((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z')))
 				{
 					ret = false;
 				}
 			}
-			return ret;
+			return ret || (hasOnlyUppercaseLetters && origName.Length < 5);
 		}
         /*static String makeValidName(String origName)
         {
@@ -335,15 +353,15 @@ namespace NamePatcher
                 return namebuilder.ToString();
             return null;
         }*/
-
         public static void FinalizeNormalizing()
         {
+
             foreach (KeyValuePair<IMemberDefinition, string> vce in NameNormalizer.clnamestomod)
             {
                 try
                 {
                     vce.Key.Name = vce.Value;
-                }
+				}
                 catch (Exception e) { Console.WriteLine("An exception occured : "); Console.WriteLine(e.ToString()); }
             }
             foreach (NameNormalizer.vmdGroupInfo curGroupEntry in NameNormalizer.vclasses)
@@ -352,7 +370,7 @@ namespace NamePatcher
                 {
                     foreach (MethodDefinition curkey in curGroupEntry.applyingmdefs)
                     {
-                        curkey.Name = curGroupEntry.newname;
+						curkey.Name = curGroupEntry.newname;
                     }
                 }
                 catch (Exception e) { Console.WriteLine("An exception occured : "); Console.WriteLine(e.ToString()); }
