@@ -296,7 +296,7 @@ namespace NamePatcher
         }
 		static bool nameIsObfuscated(String origName)
 		{
-			if (origName == null || origName.Length == 0)
+			if (String.IsNullOrEmpty(origName))
 				return true;
 			if (origName[0] >= '0' && origName[0] <= '9')
 				return true;

@@ -90,7 +90,7 @@ namespace NetworkPatcher
 
 		public static bool isObfuscated(String name)
 		{
-			if (name == null || name.Length == 0)
+			if (String.IsNullOrEmpty(name))
 				return true;
 			if (name[0] >= '0' && name[0] <= '9')
 				return true;

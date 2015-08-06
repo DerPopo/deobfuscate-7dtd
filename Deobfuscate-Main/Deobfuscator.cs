@@ -99,7 +99,6 @@ namespace DeobfuscateMain
 
 		public static void Main (string[] args)
 		{
-			args = new string[] { "E:\\Programme\\SteamLibrary\\SteamApps\\common\\7 Days To Die\\7DaysToDie_Data\\Managed\\Assembly-CSharp.o.dll" };
 			Console.WriteLine ("Assembly-CSharp Deobfuscator for 7 Days to Die [by the 7 Days to Die Modding Community]");
 
 			ownFolder = GetContainingFolder (Assembly.GetEntryAssembly ().Location);
