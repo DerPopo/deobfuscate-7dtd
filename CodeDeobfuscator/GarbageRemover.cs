@@ -51,9 +51,8 @@ namespace CodeDeobfuscator
 							//indicates that this is a method by the obfuscator that replaces single operations from other methods
 							if (targetMethod != null &&
                                 targetMethod.IsStatic && targetMethod.DeclaringType.Namespace.Equals("A") && 
-                                targetMethod.Body.Instructions.Count < 5/* &&
-								(targetMethod.Attributes & (MethodAttributes.Private | MethodAttributes.Public)) == 0 &&
-								targetMethod.IsAssembly*/)
+                                targetMethod.Body.Instructions.Count < 10 &&
+                                targetMethod.DeclaringType.Methods.Count == 1 && targetMethod.DeclaringType.Fields.Count == 0)
 							{
 								//logger.Info(targetMethod.DeclaringType.FullName + "::" + targetMethod.Name + " -> " + mdef.DeclaringType.FullName + "::" + mdef.Name + " (@" + i + ")");
 								MethodBody targetBody = targetMethod.Body;

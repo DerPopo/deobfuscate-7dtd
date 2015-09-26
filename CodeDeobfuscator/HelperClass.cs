@@ -635,8 +635,7 @@ namespace CodeDeobfuscator
 			if (instr.OpCode != op ||
 				(
 					(operand != null) ? 
-					((operand != null && instr.Operand == null) || 
-						!operand.Equals(instr.Operand)) 
+					((instr.Operand == null) || !operand.Equals(instr.Operand)) 
 					: false
 				)) 
 			{
