@@ -18,8 +18,6 @@ namespace NetworkPatcher
 			return new string[]{ "DerPopo", "Alloc", "KaXaK" };
 		}
 
-		static MethodDefinition cctorMDef = null;
-		static TypeDefinition packageTypeEnumDef = null;
 		public static int success = 0;
 		public static int error = 0;
 

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Rocks;
@@ -13,7 +14,29 @@ namespace ManualDeobfuscator
 			          field => HasType (field.FieldType, "ClientInfoCollection"),
 			          MakeFieldPublicAction, RenameAction<FieldDefinition> ("connectedClients"));
 
-			OnElement ("ClientInfoCollection.clientsByEntityId", mainModule.GetType ("ClientInfoCollection").Fields,
+			OnElement ("ClientInfoCollection.clients", mainModule.GetType ("ClientInfoCollection").Fields,
+				field => HasType (field.FieldType, "System.Collections.Generic.List") && HasGenericParams (field.FieldType, "ClientInfo"),
+				MakeFieldPublicAction, RenameAction<FieldDefinition>("clients"));
+
+			TypeDefinition typeClientInfoCollection = mainModule.GetType ("ClientInfoCollection");
+			foreach (MethodDefinition method in typeClientInfoCollection.Methods.Where((md, index) => 
+				(md.Name.StartsWith("By") && md.ReturnType.Name.Equals("ClientInfo") && md.Parameters.Count == 1)))
+			{
+				FieldDefinition targetField;
+				if (method.Body.Instructions[1].OpCode == OpCodes.Ldfld && method.Body.Instructions[3].OpCode == OpCodes.Callvirt
+					&& (targetField = ((FieldReference)method.Body.Instructions[1].Operand).Resolve()).DeclaringType.Equals(typeClientInfoCollection)
+					&& HasGenericParams(targetField.FieldType, method.Parameters[0].ParameterType, method.ReturnType))
+				{
+					MakeFieldPublicAction (targetField);
+					RenameAction<FieldDefinition>("clients" + method.Name) (targetField);
+					success++;
+				}
+				else
+					errors++;
+			}
+
+
+			/*OnElement ("ClientInfoCollection.clientsByEntityId", mainModule.GetType ("ClientInfoCollection").Fields,
 				field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.Int32", "ClientInfo"),
 				MakeFieldPublicAction, RenameAction<FieldDefinition> ("clientsByEntityId"));
 
@@ -27,11 +50,7 @@ namespace ManualDeobfuscator
 
 			OnElement ("ClientInfoCollection.clientsByPlayerId", mainModule.GetType ("ClientInfoCollection").Fields,
 				field => HasType (field.FieldType, "System.Collections.Generic.Dictionary") && HasGenericParams (field.FieldType, "System.String", "ClientInfo"),
-				MakeFieldPublicAction, RenameAction<FieldDefinition> ("clientsByPlayerId"));
-
-			OnElement ("ClientInfoCollection.clients", mainModule.GetType ("ClientInfoCollection").Fields,
-				field => HasType (field.FieldType, "System.Collections.Generic.List") && HasGenericParams (field.FieldType, "ClientInfo"),
-				MakeFieldPublicAction, RenameAction<FieldDefinition>("clients"));
+				MakeFieldPublicAction, RenameAction<FieldDefinition> ("clientsByPlayerId"));*/
 
 			// Console and ConsoleCommand
 			{
